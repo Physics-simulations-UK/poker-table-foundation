@@ -130,6 +130,13 @@
 .control-divider { height: 27px; width: 1px; background: var(--border); margin: 0 10px; }
 .app-footer { border-top: 1px solid var(--border); display: flex; justify-content: space-between; padding: 22px clamp(24px, 5vw, 88px); color: var(--muted-foreground); font-size: 9px; font-weight: 700; letter-spacing: .15em; }
 .footer-separator { color: var(--primary); margin: 0 8px; }
+@media (max-width: 1180px) {
+  .table-stage { transform: scale(.85); transform-origin: top left; margin-left: calc((100% - 935px) / 2); margin-bottom: -103px; }
+  .control-bar { margin-left: 28px; margin-right: 28px; }
+}
+@media (max-width: 1000px) {
+  .table-stage { transform: scale(.75); margin-left: calc((100% - 825px) / 2); margin-bottom: -172px; }
+}
 @media (max-width: 800px) {
   .game-area { padding-left: 16px; padding-right: 16px; }
   .table-scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
@@ -189,32 +196,3 @@
 .hero-slider { display: flex; align-items: center; gap: 8px; }
 .hero-slider input[type=range] { width: 150px; accent-color: var(--primary); }
 .hero-slider input[type=number] { width: 70px; height: 30px; background: var(--secondary); color: var(--foreground); border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; font: 600 13px var(--font-display); }
-
-
-
-/* Stable desktop layout while responsive geometry is refactored. */
-@media (min-width: 801px) {
-  .poker-app { height: 100vh; min-height: 620px; overflow: hidden; }
-  .app-header { height: 50px; }
-  .game-area { padding-top: 8px; }
-  .table-heading { margin-bottom: 0; }
-  .table-scroll {
-    height: 510px;
-    overflow: visible;
-  }
-  .table-stage {
-    width: 1100px;
-    height: 690px;
-    transform: scale(.68);
-    transform-origin: top center;
-    margin-left: calc((100% - 1100px) / 2);
-    margin-bottom: -221px;
-  }
-  .control-bar {
-    max-width: 900px;
-    min-height: 78px;
-    padding-top: 7px;
-    margin-bottom: 5px;
-  }
-  .app-footer { display: none; }
-}
