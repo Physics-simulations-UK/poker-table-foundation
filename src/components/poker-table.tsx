@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { nextHand, revealStreet, type Card, type GameState, type Player } from "@/lib/poker";
@@ -7,7 +7,7 @@ const suitGlyph: Record<Card["suit"], string> = {
   spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣",
 };
 
-function PlayingCard({ card, hidden = false, small = false }: { card?: Card; hidden?: boolean; small?: boolean }) {
+function PlayingCard({ card, hidden = false, small = false }: { card?: Card | undefined; hidden?: boolean; small?: boolean }) {
   if (hidden) {
     return <div className={`playing-card card-back ${small ? "card-small" : ""}`} aria-label="Face-down card"><span className="card-back-inner"><span>♠</span></span></div>;
   }
@@ -38,6 +38,11 @@ function Seat({ player, seat }: { player: Player; seat: number }) {
 
 export function PokerTable({ initialGame }: { initialGame: GameState }) {
   const [game, setGame] = useState(initialGame);
+  const tableScroll = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = tableScroll.current;
+    if (element && window.innerWidth <= 800) element.scrollLeft = (element.scrollWidth - element.clientWidth) / 2;
+  }, []);
   return (
     <main className="poker-app">
       <header className="app-header">
@@ -47,7 +52,7 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
 
       <section className="game-area" aria-label="Poker table">
         <div className="table-heading"><span>THE TABLE <span className="heading-line" /></span><span>HAND {String(game.handNumber).padStart(2, "0")} <span className="heading-separator">/</span> 100 BB DEEP</span></div>
-        <div className="table-scroll">
+        <div className="table-scroll" ref={tableScroll}>
           <div className="table-stage">
             <div className="table-outer"><div className="table-rail"><div className="table-felt">
               <div className="felt-border" />

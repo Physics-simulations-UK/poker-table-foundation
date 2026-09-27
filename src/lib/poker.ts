@@ -39,8 +39,11 @@ export function shuffleDeck(deck: Card[]): Card[] {
   for (let i = shuffled.length - 1; i > 0; i--) {
     const random = new Uint32Array(1);
     crypto.getRandomValues(random);
-    const j = random[0] % (i + 1);
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    const j = (random[0] ?? 0) % (i + 1);
+    const current = shuffled[i];
+    const swap = shuffled[j];
+    if (!current || !swap) throw new Error("Invalid deck while shuffling");
+    [shuffled[i], shuffled[j]] = [swap, current];
   }
   return shuffled;
 }
@@ -48,17 +51,22 @@ export function shuffleDeck(deck: Card[]): Card[] {
 export function createHand(dealerSeat = 4, handNumber = 1): GameState {
   const deck = shuffleDeck(createDeck());
   let next = 0;
+  const draw = (): Card => {
+    const card = deck[next++];
+    if (!card) throw new Error("Deck ran out of cards");
+    return card;
+  };
   const players: Player[] = seatNames.map((name, seat) => ({
     id: `seat-${seat}`,
     name,
     stackBB: 100,
-    position: clockwisePositions[(seat - dealerSeat + 6) % 6],
-    cards: [deck[next++], deck[next++]],
+    position: clockwisePositions[(seat - dealerSeat + 6) % 6] ?? "BTN",
+    cards: [draw(), draw()],
     isHero: seat === 0,
     isDealer: seat === dealerSeat,
   }));
   const communityCards: GameState["communityCards"] = [
-    deck[next++], deck[next++], deck[next++], deck[next++], deck[next++],
+    draw(), draw(), draw(), draw(), draw(),
   ];
   return { players, communityCards, revealedCount: 0, dealerSeat, handNumber };
 }

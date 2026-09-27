@@ -161,7 +161,6 @@
   .header-meta .status-dot { width: 7px; height: 7px; }
   .game-area { padding-top: 24px; }
   .table-heading { font-size: 9px; }
-  .table-stage { margin-left: -90px; }
   .control-bar { margin: 0 18px 35px; padding-top: 18px; }
   .control-actions { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .control-actions button { min-width: 0; width: 100%; font-size: 9px; }
