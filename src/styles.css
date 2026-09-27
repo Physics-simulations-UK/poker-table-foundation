@@ -309,3 +309,48 @@
 
   .control-bar { max-width: 1320px; }
 }
+
+
+/* Hi-DPI laptop viewport (e.g. 957x738 CSS px on a Retina display).
+   Use nearly the full CSS width; the browser/device pixel ratio handles sharpness. */
+@media (min-width: 900px) and (max-width: 1100px) and (max-height: 800px) {
+  .poker-app { grid-template-rows: 44px minmax(0, 1fr); }
+  .app-header { height: 44px; }
+  .game-area { padding-top: 3px; }
+  .table-heading { margin-bottom: 0; }
+
+  .table-scroll {
+    height: 510px;
+    overflow: visible;
+  }
+  .table-stage {
+    width: 1100px;
+    height: 690px;
+    transform: scale(.82);
+    transform-origin: top center;
+    margin-top: 2px;
+    margin-bottom: -124px;
+  }
+
+  .seat { width: 194px; }
+  .seat-info { width: 188px; min-height: 62px; padding: 11px 14px 12px; }
+  .seat-hero .seat-info { width: 194px; }
+  .seat-name { font-size: 17px; }
+  .seat-stack { font-size: 16px; }
+  .seat-stack small { font-size: 10px; }
+  .seat-position { font-size: 10px; }
+  .seat-action { font-size: 9px; padding: 3px 7px; }
+
+  .seat-cards { height: 101px; gap: 5px; }
+  .seat .playing-card { width: 69px; height: 95px; }
+  .seat:not(.seat-hero) .seat-cards { transform: scale(.90); }
+  .seat-hero .playing-card { width: 74px; height: 102px; }
+
+  .control-bar {
+    max-width: 900px;
+    min-height: 78px;
+    padding-top: 7px;
+    margin-bottom: 5px;
+  }
+  .app-footer { display: none; }
+}
