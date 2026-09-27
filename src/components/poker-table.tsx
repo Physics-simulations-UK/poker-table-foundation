@@ -23,11 +23,11 @@ function PlayingCard({ card, hidden = false, small = false }: { card?: Card | un
   );
 }
 
-function Seat({ player, seat, active }: { player: Player; seat: number; active: boolean }) {
+function Seat({ player, seat, active, showdown }: { player: Player; seat: number; active: boolean; showdown: boolean }) {
   return (
     <div className={`seat seat-${seat} ${player.isHero ? "seat-hero" : ""} ${player.folded ? "seat-folded" : ""} ${active ? "seat-active" : ""}`}>
       <div className="seat-cards" aria-label={player.isHero ? "Your hole cards" : `${player.name}'s hidden cards`}>
-        {player.cards.map((card, index) => <PlayingCard key={index} card={card} hidden={!player.isHero} />)}
+        {player.cards.map((card, index) => <PlayingCard key={index} card={card} hidden={!player.isHero && !(showdown && !player.folded)} />)}
       </div>
       <div className="seat-info">
         <div className="seat-top">
@@ -118,7 +118,7 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
               </div>
               {game.message ? <div className="table-message" role="status">{game.message}</div> : <div className="table-label">NO LIMIT · TEXAS HOLD’EM</div>}
             </div></div></div>
-            {game.players.map((player, index) => <Seat key={player.id} player={player} seat={index} active={game.actor === index} />)}
+            {game.players.map((player, index) => <Seat key={player.id} player={player} seat={index} active={game.actor === index} showdown={game.street === "complete" && game.revealedCount === 5} />)}
           </div>
         </div>
       </section>
