@@ -18,6 +18,66 @@ export function handScore([a, b]: [Card, Card]): number {
   return Math.ceil(score);
 }
 
+function isPair([a, b]: [Card, Card]) {
+  return a.rank === b.rank;
+}
+
+function highRank([a, b]: [Card, Card]) {
+  return Math.max(rankValue[a.rank], rankValue[b.rank]);
+}
+
+function lowRank([a, b]: [Card, Card]) {
+  return Math.min(rankValue[a.rank], rankValue[b.rank]);
+}
+
+/**
+ * Stack-aware threshold for calling a preflop all-in.
+ *
+ * This is deliberately a simple training-game baseline rather than a solver
+ * chart. Short shoves are called wider; deep shoves require premium hands.
+ * The explicit premium-hand checks stop the previous behaviour where a large
+ * bet size caused nearly every bot to fold automatically.
+ */
+function shouldCallPreflopAllIn(game: GameState, score: number, toCall: number) {
+  if (game.actor === null) return false;
+  const player = game.players[game.actor];
+  if (!player) return false;
+
+  const cards = player.cards;
+  const pair = isPair(cards);
+  const hi = highRank(cards);
+  const lo = lowRank(cards);
+  const suited = cards[0].suit === cards[1].suit;
+  const callBB = toCall / BIG_BLIND;
+
+  // Always continue with the very top of the range.
+  if (pair && hi >= 12) return true; // QQ+
+  if (hi === 14 && lo === 13) return true; // AK
+
+  // Short-stack shoves: wider value range.
+  if (callBB <= 12) {
+    if (pair && hi >= 8) return true; // 88+
+    if (hi === 14 && lo >= 10) return true; // AT+
+    if (hi === 13 && lo >= 11) return true; // KJ+
+    if (suited && hi === 12 && lo >= 11) return true; // QJs
+    return score >= 10;
+  }
+
+  // Medium shoves: tighten substantially.
+  if (callBB <= 25) {
+    if (pair && hi >= 10) return true; // TT+
+    if (hi === 14 && lo >= 12) return true; // AQ+
+    if (suited && hi === 14 && lo === 11) return true; // AJs
+    return score >= 12;
+  }
+
+  // Deep shoves (including a normal 100BB open shove) should be rare calls,
+  // but premium hands must still defend instead of folding mechanically.
+  if (pair && hi >= 12) return true; // QQ+
+  if (hi === 14 && lo === 13) return true; // AK
+  return false;
+}
+
 /** Simple deterministic rule-based preflop decision for a computer opponent. */
 export function decideBotAction(game: GameState): BetAction {
   const legal = getLegalActions(game);
@@ -31,6 +91,25 @@ export function decideBotAction(game: GameState): BetAction {
   };
   const passive: BetAction = legal.canCheck ? { type: "check" } : { type: "fold" };
   const call: BetAction = legal.canCheck ? { type: "check" } : { type: "call" };
+
+  // Explicitly recognise an opponent's all-in. The raiser's street bet equals
+  // their total available chips for this street, so another active player's
+  // all-in bet is represented by the current bet being at least their stack
+  // commitment. At this stage all players begin the hand equally deep, so a
+  // very large current bet also reliably represents the hero's shove.
+  const facingAllIn =
+    game.currentBet > BIG_BLIND &&
+    game.players.some(
+      (opponent, seat) =>
+        seat !== game.actor &&
+        !opponent.folded &&
+        opponent.allIn &&
+        opponent.streetBet === game.currentBet,
+    );
+
+  if (facingAllIn) {
+    return shouldCallPreflopAllIn(game, score, toCall) ? call : passive;
+  }
 
   // Unraised pot (only blinds so far).
   if (game.currentBet <= BIG_BLIND) {
