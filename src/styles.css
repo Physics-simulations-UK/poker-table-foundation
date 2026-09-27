@@ -214,14 +214,14 @@
   }
   .table-heading { margin-bottom: 2px; }
   .table-scroll {
-    height: 535px;
+    height: 585px;
     overflow: visible;
   }
   .table-stage {
-    transform: scale(.75);
+    transform: scale(.82);
     transform-origin: top center;
     margin: 4px auto 0;
-    margin-bottom: -172px;
+    margin-bottom: -124px;
   }
   .control-bar {
     margin-top: 0;
