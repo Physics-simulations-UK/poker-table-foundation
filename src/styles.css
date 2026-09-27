@@ -191,101 +191,30 @@
 .hero-slider input[type=number] { width: 70px; height: 30px; background: var(--secondary); color: var(--foreground); border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; font: 600 13px var(--font-display); }
 
 
-/* Responsive desktop table
-   One 1100x690 logical coordinate system, scaled from the viewport.
-   No device-specific width breakpoints are required. */
+
+/* Stable desktop layout while responsive geometry is refactored. */
 @media (min-width: 801px) {
-  .poker-app {
-    height: 100dvh;
-    min-height: 620px;
-    display: grid;
-    grid-template-rows: clamp(44px, 7dvh, 64px) minmax(0, 1fr) auto;
-    overflow: hidden;
-  }
-
-  .app-header {
-    height: auto;
-    min-height: 44px;
-  }
-
-  .game-area {
-    width: 100%;
-    max-width: none;
-    min-height: 0;
-    padding: clamp(8px, 1.6dvh, 18px) clamp(18px, 3vw, 48px) 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .table-heading {
-    width: min(92vw, 1280px);
-    max-width: none;
-    flex: 0 0 auto;
-  }
-
+  .poker-app { height: 100vh; min-height: 620px; overflow: hidden; }
+  .app-header { height: 50px; }
+  .game-area { padding-top: 8px; }
+  .table-heading { margin-bottom: 0; }
   .table-scroll {
-    position: relative;
-    width: 100%;
-    flex: 1 1 auto;
-    min-height: 0;
+    height: 510px;
     overflow: visible;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
   }
-
-  /*
-   * The stage keeps its proven 1100x690 internal coordinates.
-   * --table-scale is driven by viewport width AND height. Whichever
-   * dimension is tighter wins, so the layout remains proportional.
-   */
   .table-stage {
-    --table-scale: min(
-      1.08,
-      calc((100vw - 48px) / 1100),
-      calc((100dvh - 190px) / 690)
-    );
     width: 1100px;
     height: 690px;
-    position: absolute;
-    top: 0;
-    left: 50%;
-    margin: 0;
+    transform: scale(.68);
     transform-origin: top center;
-    transform: translateX(-50%) scale(var(--table-scale));
+    margin-left: calc((100% - 1100px) / 2);
+    margin-bottom: -221px;
   }
-
-  /* Readability is allowed to grow independently of the oval. */
-  .seat { width: 188px; }
-  .seat-info {
-    width: 182px;
-    min-height: 58px;
-    padding: 10px 13px 11px;
-  }
-  .seat-hero .seat-info { width: 188px; }
-  .seat-name { font-size: 16px; }
-  .seat-stack { font-size: 15px; }
-  .seat-stack small { font-size: 10px; }
-  .seat-position { font-size: 10px; }
-  .seat-action { font-size: 9px; padding: 3px 7px; }
-
-  .seat-cards { height: 98px; gap: 5px; }
-  .seat .playing-card { width: 66px; height: 91px; }
-  .seat:not(.seat-hero) .seat-cards {
-    transform: scale(.94);
-    transform-origin: bottom center;
-  }
-  .seat-hero .playing-card { width: 72px; height: 99px; }
-
   .control-bar {
-    width: min(92vw, 1280px);
-    max-width: none;
-    margin: 0 auto clamp(8px, 1.5dvh, 16px);
-    padding-top: clamp(8px, 1.4dvh, 14px);
-    min-height: 86px;
-    flex-wrap: wrap;
+    max-width: 900px;
+    min-height: 78px;
+    padding-top: 7px;
+    margin-bottom: 5px;
   }
-  .control-actions button { height: 38px; }
-  .hero-raise { gap: 4px; }
   .app-footer { display: none; }
 }
