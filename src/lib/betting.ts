@@ -1,4 +1,5 @@
 import type { GameState, Player, Street } from "@/lib/poker";
+import { resolveShowdown } from "@/lib/showdown";
 
 /** Chips are integers in tenths of a big blind to avoid floating-point drift. */
 export const CHIPS_PER_BB = 10;
@@ -116,12 +117,7 @@ function finishRound(game: GameState): GameState {
   const collected = collectBets(game);
 
   if (game.street === "river") {
-    return {
-      ...collected,
-      street: "complete",
-      actor: null,
-      message: "River betting complete — showdown coming next.",
-    };
+    return resolveShowdown({ ...collected, revealedCount: 5 }).game;
   }
 
   const nextStreet: Street =
