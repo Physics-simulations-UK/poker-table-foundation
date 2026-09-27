@@ -328,8 +328,9 @@
     height: 690px;
     transform: scale(.82);
     transform-origin: top center;
-    margin-top: 2px;
-    margin-bottom: -124px;
+    /* Reset the older <=1000px positioning rule completely. */
+    margin: 2px 0 -124px 50%;
+    translate: -50% 0;
   }
 
   .seat { width: 194px; }
