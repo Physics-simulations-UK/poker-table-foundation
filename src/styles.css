@@ -214,14 +214,14 @@
   }
   .table-heading { margin-bottom: 2px; }
   .table-scroll {
-    height: 585px;
+    height: 640px;
     overflow: visible;
   }
   .table-stage {
-    transform: scale(.82);
+    transform: scale(.90);
     transform-origin: top center;
     margin: 4px auto 0;
-    margin-bottom: -124px;
+    margin-bottom: -69px;
   }
   .control-bar {
     margin-top: 0;
@@ -234,18 +234,18 @@
   .hero-slider input[type=number] { height: 28px; }
 
   /* Readability boost without enlarging the table itself. */
-  .seat { width: 184px; }
-  .seat-info { width: 178px; min-height: 58px; padding: 10px 13px 11px; }
-  .seat-name { font-size: 16px; }
-  .seat-stack { font-size: 15px; }
+  .seat { width: 194px; }
+  .seat-info { width: 188px; min-height: 62px; padding: 11px 14px 12px; }
+  .seat-name { font-size: 17px; }
+  .seat-stack { font-size: 16px; }
   .seat-stack small { font-size: 10px; }
   .seat-position { font-size: 10px; }
   .seat-action { font-size: 9px; padding: 3px 7px; }
-  .seat-cards { height: 94px; gap: 5px; }
-  .seat .playing-card { width: 64px; height: 88px; }
-  .seat:not(.seat-hero) .seat-cards { transform: scale(.84); }
-  .seat-hero .playing-card { width: 68px; height: 94px; }
-  .seat-hero .seat-info { width: 184px; }
+  .seat-cards { height: 101px; gap: 5px; }
+  .seat .playing-card { width: 69px; height: 95px; }
+  .seat:not(.seat-hero) .seat-cards { transform: scale(.90); }
+  .seat-hero .playing-card { width: 74px; height: 102px; }
+  .seat-hero .seat-info { width: 194px; }
   .app-footer { display: none; }
 }
 
