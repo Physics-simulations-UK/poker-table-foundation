@@ -137,7 +137,7 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
         <div className="table-scroll" ref={tableScroll}>
           <div
             className="table-stage"
-            style={window.innerWidth > 800 ? { transform: `translateX(-50%) scale(${tableScale})` } : undefined}
+            style={{ transform: `translateX(-50%) scale(${tableScale})` }}
           >
             <div className="table-outer"><div className="table-rail"><div className="table-felt">
               <div className="felt-border" />
