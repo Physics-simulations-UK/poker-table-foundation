@@ -66,4 +66,37 @@ describe("betting street progression", () => {
     expect(chipsAfterShowdown).toBe(chipsBeforeShowdown);
     expect(game.message).toMatch(/WINS|SPLIT/);
   });
+
+  it("runs the board straight to showdown when everyone remaining is all-in preflop", () => {
+    let game = createHand(4, 1);
+    const heroSeat = 0;
+    const villainSeat = 1;
+
+    game = {
+      ...game,
+      actor: heroSeat,
+      currentBet: 0,
+      minRaise: 10,
+      players: game.players.map((player, seat) => ({
+        ...player,
+        folded: seat > 1,
+        allIn: false,
+        hasActed: false,
+        streetBet: 0,
+        totalCommitted: 0,
+        stack: seat <= 1 ? 100 : player.stack,
+      })),
+    };
+
+    game = applyAction(game, { type: "raise", to: 100 });
+    expect(game.actor).toBe(villainSeat);
+
+    game = applyAction(game, { type: "call" });
+
+    expect(game.street).toBe("complete");
+    expect(game.actor).toBeNull();
+    expect(game.revealedCount).toBe(5);
+    expect(game.pot).toBe(0);
+    expect(game.message).toMatch(/WINS|SPLIT/);
+  });
 });
