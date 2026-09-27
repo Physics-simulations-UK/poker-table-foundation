@@ -130,13 +130,6 @@
 .control-divider { height: 27px; width: 1px; background: var(--border); margin: 0 10px; }
 .app-footer { border-top: 1px solid var(--border); display: flex; justify-content: space-between; padding: 22px clamp(24px, 5vw, 88px); color: var(--muted-foreground); font-size: 9px; font-weight: 700; letter-spacing: .15em; }
 .footer-separator { color: var(--primary); margin: 0 8px; }
-@media (max-width: 1180px) {
-  .table-stage { transform: scale(.85); transform-origin: top left; margin-left: calc((100% - 935px) / 2); margin-bottom: -103px; }
-  .control-bar { margin-left: 28px; margin-right: 28px; }
-}
-@media (max-width: 1000px) {
-  .table-stage { transform: scale(.75); margin-left: calc((100% - 825px) / 2); margin-bottom: -172px; }
-}
 @media (max-width: 800px) {
   .game-area { padding-left: 16px; padding-right: 16px; }
   .table-scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
@@ -198,160 +191,101 @@
 .hero-slider input[type=number] { width: 70px; height: 30px; background: var(--secondary); color: var(--foreground); border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; font: 600 13px var(--font-display); }
 
 
-/* Laptop-height fit: use the viewport as the desktop game canvas. */
-@media (min-width: 801px) and (max-height: 950px) {
+/* Responsive desktop table
+   One 1100x690 logical coordinate system, scaled from the viewport.
+   No device-specific width breakpoints are required. */
+@media (min-width: 801px) {
   .poker-app {
-    height: 100vh;
-    min-height: 0;
+    height: 100dvh;
+    min-height: 620px;
     display: grid;
-    grid-template-rows: 48px minmax(0, 1fr);
+    grid-template-rows: clamp(44px, 7dvh, 64px) minmax(0, 1fr) auto;
+    overflow: hidden;
   }
-  .app-header { height: 48px; }
+
+  .app-header {
+    height: auto;
+    min-height: 44px;
+  }
+
   .game-area {
     width: 100%;
-    padding-top: 5px;
+    max-width: none;
     min-height: 0;
+    padding: clamp(8px, 1.6dvh, 18px) clamp(18px, 3vw, 48px) 0;
+    display: flex;
+    flex-direction: column;
   }
-  .table-heading { margin-bottom: 2px; }
-  .table-scroll {
-    height: 640px;
-    overflow: visible;
+
+  .table-heading {
+    width: min(92vw, 1280px);
+    max-width: none;
+    flex: 0 0 auto;
   }
-  .table-stage {
-    transform: scale(.90);
-    transform-origin: top center;
-    margin: 4px auto 0;
-    margin-bottom: -69px;
-  }
-  .control-bar {
-    margin-top: 0;
-    margin-bottom: 8px;
-    padding-top: 10px;
-    min-height: 78px;
-  }
-  .control-actions button { height: 36px; }
-  .hero-raise { gap: 4px; }
-  .hero-slider input[type=number] { height: 28px; }
-
-  /* Readability boost without enlarging the table itself. */
-  .seat { width: 194px; }
-  .seat-info { width: 188px; min-height: 62px; padding: 11px 14px 12px; }
-  .seat-name { font-size: 17px; }
-  .seat-stack { font-size: 16px; }
-  .seat-stack small { font-size: 10px; }
-  .seat-position { font-size: 10px; }
-  .seat-action { font-size: 9px; padding: 3px 7px; }
-  .seat-cards { height: 101px; gap: 5px; }
-  .seat .playing-card { width: 69px; height: 95px; }
-  .seat:not(.seat-hero) .seat-cards { transform: scale(.90); }
-  .seat-hero .playing-card { width: 74px; height: 102px; }
-  .seat-hero .seat-info { width: 194px; }
-  .app-footer { display: none; }
-}
-
-@media (min-width: 801px) and (max-height: 800px) {
-  .poker-app { grid-template-rows: 46px minmax(0, 1fr) auto; }
-  .app-header { height: 44px; }
-  .game-area { padding-top: 3px; }
-  .table-scroll { height: 470px; }
-  .table-stage {
-    transform: scale(.65);
-    margin-top: 2px;
-    margin-bottom: -241px;
-  }
-  .control-bar {
-    min-height: 82px;
-    padding-top: 7px;
-    margin-bottom: 5px;
-  }
-  .control-subtitle { font-size: 15px; }
-}
-
-
-/* Wide laptop/desktop: use horizontal space instead of shrinking a 1100px canvas. */
-@media (min-width: 1450px) and (min-height: 800px) and (max-height: 950px) {
-  .table-scroll { height: 640px; }
-  .table-stage {
-    width: 1380px;
-    height: 690px;
-    transform: scale(.90);
-    margin-bottom: -69px;
-  }
-  .table-outer {
-    width: 1180px;
-    height: 446px;
-    left: 100px;
-  }
-  .seat { width: 210px; }
-  .seat-0 { left: 585px; top: 505px; }
-  .seat-1 { left: 70px; top: 457px; }
-  .seat-2 { left: 92px; top: 34px; }
-  .seat-3 { left: 585px; top: 13px; }
-  .seat-4 { left: 1078px; top: 34px; }
-  .seat-5 { left: 1100px; top: 457px; }
-
-  .seat-info { width: 202px; min-height: 66px; padding: 12px 15px 13px; }
-  .seat-hero .seat-info { width: 210px; }
-  .seat-name { font-size: 19px; }
-  .seat-stack { font-size: 17px; }
-  .seat-stack small { font-size: 11px; }
-  .seat-position { font-size: 11px; }
-  .seat-action { font-size: 10px; padding: 4px 8px; }
-
-  .seat-cards { height: 112px; gap: 6px; }
-  .seat .playing-card { width: 76px; height: 105px; }
-  .seat:not(.seat-hero) .seat-cards { transform: scale(.94); }
-  .seat-hero .playing-card { width: 82px; height: 113px; }
-
-  .card-corner { font-size: 17px; }
-  .card-corner span { font-size: 15px; }
-  .card-center { font-size: 35px; }
-
-  .control-bar { max-width: 1320px; }
-}
-
-
-/* Hi-DPI laptop viewport (e.g. 957x738 CSS px on a Retina display).
-   Use nearly the full CSS width; the browser/device pixel ratio handles sharpness. */
-@media (min-width: 900px) and (max-width: 1100px) and (max-height: 800px) {
-  .poker-app { grid-template-rows: 44px minmax(0, 1fr); }
-  .app-header { height: 44px; }
-  .game-area { padding-top: 3px; }
-  .table-heading { margin-bottom: 0; }
 
   .table-scroll {
-    height: 510px;
+    position: relative;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow: visible;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
+
+  /*
+   * The stage keeps its proven 1100x690 internal coordinates.
+   * --table-scale is driven by viewport width AND height. Whichever
+   * dimension is tighter wins, so the layout remains proportional.
+   */
   .table-stage {
+    --table-scale: min(
+      1.08,
+      calc((100vw - 48px) / 1100),
+      calc((100dvh - 190px) / 690)
+    );
     width: 1100px;
     height: 690px;
-    transform: scale(.82);
+    position: absolute;
+    top: 0;
+    left: 50%;
+    margin: 0;
     transform-origin: top center;
-    /* Reset the older <=1000px positioning rule completely. */
-    margin: 2px 0 -124px 50%;
-    translate: -50% 0;
+    transform: translateX(-50%) scale(var(--table-scale));
   }
 
-  .seat { width: 194px; }
-  .seat-info { width: 188px; min-height: 62px; padding: 11px 14px 12px; }
-  .seat-hero .seat-info { width: 194px; }
-  .seat-name { font-size: 17px; }
-  .seat-stack { font-size: 16px; }
+  /* Readability is allowed to grow independently of the oval. */
+  .seat { width: 188px; }
+  .seat-info {
+    width: 182px;
+    min-height: 58px;
+    padding: 10px 13px 11px;
+  }
+  .seat-hero .seat-info { width: 188px; }
+  .seat-name { font-size: 16px; }
+  .seat-stack { font-size: 15px; }
   .seat-stack small { font-size: 10px; }
   .seat-position { font-size: 10px; }
   .seat-action { font-size: 9px; padding: 3px 7px; }
 
-  .seat-cards { height: 101px; gap: 5px; }
-  .seat .playing-card { width: 69px; height: 95px; }
-  .seat:not(.seat-hero) .seat-cards { transform: scale(.90); }
-  .seat-hero .playing-card { width: 74px; height: 102px; }
+  .seat-cards { height: 98px; gap: 5px; }
+  .seat .playing-card { width: 66px; height: 91px; }
+  .seat:not(.seat-hero) .seat-cards {
+    transform: scale(.94);
+    transform-origin: bottom center;
+  }
+  .seat-hero .playing-card { width: 72px; height: 99px; }
 
   .control-bar {
-    max-width: 900px;
-    min-height: 78px;
-    padding-top: 7px;
-    margin-bottom: 5px;
+    width: min(92vw, 1280px);
+    max-width: none;
+    margin: 0 auto clamp(8px, 1.5dvh, 16px);
+    padding-top: clamp(8px, 1.4dvh, 14px);
+    min-height: 86px;
+    flex-wrap: wrap;
   }
+  .control-actions button { height: 38px; }
+  .hero-raise { gap: 4px; }
   .app-footer { display: none; }
 }
