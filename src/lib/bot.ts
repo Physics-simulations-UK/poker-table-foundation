@@ -118,11 +118,37 @@ export function decideBotAction(game: GameState): BetAction {
     if (score >= 6 && player.position === "SB") return call;
     return passive;
   }
-  // Facing a single raise.
+  // Facing a normal single raise. Defend wider in position and from the
+  // blinds so ordinary 6-max hands do not collapse to heads-up too often.
   if (game.currentBet < BIG_BLIND * 8) {
+    const callBB = toCall / BIG_BLIND;
+    const pair = isPair(player.cards);
+    const hi = highRank(player.cards);
+    const lo = lowRank(player.cards);
+    const suited = player.cards[0].suit === player.cards[1].suit;
+    const lateOrBlind = ["CO", "BTN", "SB", "BB"].includes(player.position);
+
+    // Keep premium hands aggressive.
     if (score >= 12) return raiseTo(game.currentBet * 3);
-    if (score >= 8 && toCall <= BIG_BLIND * 4) return call;
-    if (score >= 10) return call;
+
+    // Strong broadways and medium pairs continue from every position.
+    if (pair && hi >= 7 && callBB <= 4) return call; // 77+
+    if (hi === 14 && lo >= 10 && callBB <= 4) return call; // AT+
+    if (hi === 13 && lo >= 11 && callBB <= 4) return call; // KJ+
+
+    // Later positions and blinds defend useful suited/connective hands wider.
+    if (lateOrBlind && callBB <= 3.5) {
+      if (pair && hi >= 4) return call; // 44+
+      if (suited && hi === 14 && lo >= 7) return call; // A7s+
+      if (suited && hi === 13 && lo >= 9) return call; // K9s+
+      if (suited && hi === 12 && lo >= 9) return call; // Q9s+
+      if (suited && hi === 11 && lo >= 9) return call; // J9s+
+      if (suited && hi <= 10 && hi - lo <= 2 && lo >= 6) return call; // suited connectors/gappers
+      if (score >= 6.5) return call;
+    }
+
+    // HJ/UTG remain tighter, but not as excessively tight as the first model.
+    if (score >= 7.5 && callBB <= 3.5) return call;
     return passive;
   }
   // Facing a 3-bet or more.
