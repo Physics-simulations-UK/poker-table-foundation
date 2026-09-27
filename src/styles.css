@@ -131,11 +131,11 @@
 .app-footer { border-top: 1px solid var(--border); display: flex; justify-content: space-between; padding: 22px clamp(24px, 5vw, 88px); color: var(--muted-foreground); font-size: 9px; font-weight: 700; letter-spacing: .15em; }
 .footer-separator { color: var(--primary); margin: 0 8px; }
 @media (max-width: 1180px) {
-  .table-stage { transform: scale(.88); transform-origin: top center; margin-bottom: -82px; }
+  .table-stage { transform: scale(.85); transform-origin: top left; margin-left: calc((100% - 935px) / 2); margin-bottom: -103px; }
   .control-bar { margin-left: 28px; margin-right: 28px; }
 }
 @media (max-width: 1000px) {
-  .table-stage { transform: scale(.75); margin-bottom: -172px; }
+  .table-stage { transform: scale(.75); margin-left: calc((100% - 825px) / 2); margin-bottom: -172px; }
 }
 @media (max-width: 800px) {
   .game-area { padding-left: 16px; padding-right: 16px; }
