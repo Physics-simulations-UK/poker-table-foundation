@@ -196,3 +196,37 @@
 .hero-slider { display: flex; align-items: center; gap: 8px; }
 .hero-slider input[type=range] { width: 150px; accent-color: var(--primary); }
 .hero-slider input[type=number] { width: 70px; height: 30px; background: var(--secondary); color: var(--foreground); border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; font: 600 13px var(--font-display); }
+
+
+/* Laptop-height fit: keep the full table and controls inside one viewport. */
+@media (min-width: 801px) and (max-height: 950px) {
+  .app-header { height: 60px; }
+  .game-area { padding-top: 18px; }
+  .table-stage {
+    transform: scale(.78);
+    transform-origin: top center;
+    margin-top: 8px;
+    margin-bottom: -152px;
+  }
+  .control-bar {
+    margin-bottom: 18px;
+    padding-top: 14px;
+  }
+  .control-actions button { height: 38px; }
+  .app-footer { padding-top: 14px; padding-bottom: 14px; }
+}
+
+@media (min-width: 801px) and (max-height: 780px) {
+  .app-header { height: 54px; }
+  .game-area { padding-top: 12px; }
+  .table-stage {
+    transform: scale(.68);
+    margin-top: 6px;
+    margin-bottom: -221px;
+  }
+  .control-bar {
+    margin-bottom: 10px;
+    padding-top: 10px;
+  }
+  .app-footer { display: none; }
+}
