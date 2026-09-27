@@ -3,14 +3,20 @@ import { applyAction, potTotal } from "@/lib/betting";
 import { createHand, type GameState } from "@/lib/poker";
 
 function checkThroughRound(game: GameState): GameState {
+  const startingStreet = game.street;
   let current = game;
   let guard = 0;
-  while (current.actor !== null && guard++ < 20) {
+
+  while (current.actor !== null && current.street === startingStreet && guard++ < 20) {
     const player = current.players[current.actor];
     if (!player) throw new Error("Missing actor");
-    current = applyAction(current, current.currentBet === player.streetBet ? { type: "check" } : { type: "call" });
+    current = applyAction(
+      current,
+      current.currentBet === player.streetBet ? { type: "check" } : { type: "call" },
+    );
   }
-  if (guard >= 20) throw new Error("Betting round did not complete");
+
+  if (guard >= 20) throw new Error(`Betting round did not complete on ${startingStreet}`);
   return current;
 }
 
