@@ -88,3 +88,47 @@ describe("preflop bot facing a 100BB all-in", () => {
     expect(decideBotAction(facingDeepShove(cards))).toEqual({ type: "fold" });
   });
 });
+
+
+function facingNormalRaise(cards: [Card, Card], position: Position, raiseBB = 3): GameState {
+  const game = facingDeepShove(cards);
+  const actor = game.players[1]!;
+  const raiser = game.players[0]!;
+  return {
+    ...game,
+    currentBet: raiseBB * BIG_BLIND,
+    minRaise: (raiseBB - 1) * BIG_BLIND,
+    actor: 1,
+    players: game.players.map((p, seat) => {
+      if (seat === 0) return {
+        ...raiser, stack: (100 - raiseBB) * BIG_BLIND, allIn: false,
+        streetBet: raiseBB * BIG_BLIND, totalCommitted: raiseBB * BIG_BLIND,
+        lastAction: `RAISE TO ${raiseBB}BB`,
+      };
+      if (seat === 1) return { ...actor, position, stack: 100 * BIG_BLIND, streetBet: 0, totalCommitted: 0 };
+      return p;
+    }),
+  };
+}
+
+describe("preflop bot facing a normal open", () => {
+  it("defends a small pair from the big blind", () => {
+    const hand: [Card, Card] = [card("5", "spades"), card("5", "hearts")];
+    expect(decideBotAction(facingNormalRaise(hand, "BB"))).toEqual({ type: "call" });
+  });
+
+  it("defends a suited connector on the button", () => {
+    const hand: [Card, Card] = [card("9", "spades"), card("8", "spades")];
+    expect(decideBotAction(facingNormalRaise(hand, "BTN"))).toEqual({ type: "call" });
+  });
+
+  it("defends suited ace from the big blind", () => {
+    const hand: [Card, Card] = [card("A", "spades"), card("8", "spades")];
+    expect(decideBotAction(facingNormalRaise(hand, "BB"))).toEqual({ type: "call" });
+  });
+
+  it("still folds weak offsuit trash from early position", () => {
+    const hand: [Card, Card] = [card("7", "clubs"), card("2", "diamonds")];
+    expect(decideBotAction(facingNormalRaise(hand, "HJ"))).toEqual({ type: "fold" });
+  });
+});
