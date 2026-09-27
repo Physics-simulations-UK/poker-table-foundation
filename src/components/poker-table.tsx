@@ -108,10 +108,7 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
       <section className="game-area" aria-label="Poker table">
         <div className="table-heading"><span>THE TABLE <span className="heading-line" /></span><span>HAND {String(game.handNumber).padStart(2, "0")} <span className="heading-separator">/</span> {game.street.toUpperCase()}</span></div>
         <div className="table-scroll" ref={tableScroll}>
-          <div
-            className="table-stage"
-            style={{ transform: `translateX(-50%) scale(${tableScale})` }}
-          >
+          <div className="table-stage">
             <div className="table-outer"><div className="table-rail"><div className="table-felt">
               <div className="felt-border" />
               <div className="felt-brand"><span className="felt-brand-symbol">♠</span><span>POKER COACH</span></div>
