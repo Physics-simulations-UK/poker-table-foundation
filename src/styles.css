@@ -198,35 +198,57 @@
 .hero-slider input[type=number] { width: 70px; height: 30px; background: var(--secondary); color: var(--foreground); border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; font: 600 13px var(--font-display); }
 
 
-/* Laptop-height fit: keep the full table and controls inside one viewport. */
+/* Laptop-height fit: use the viewport as the desktop game canvas. */
 @media (min-width: 801px) and (max-height: 950px) {
-  .app-header { height: 60px; }
-  .game-area { padding-top: 18px; }
+  .poker-app {
+    height: 100vh;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 52px minmax(0, 1fr) auto;
+  }
+  .app-header { height: 52px; }
+  .game-area {
+    width: 100%;
+    padding-top: 10px;
+    min-height: 0;
+  }
+  .table-heading { margin-bottom: 2px; }
+  .table-scroll {
+    height: 535px;
+    overflow: visible;
+  }
   .table-stage {
-    transform: scale(.78);
+    transform: scale(.72);
     transform-origin: top center;
-    margin-top: 8px;
-    margin-bottom: -152px;
+    margin: 4px auto 0;
+    margin-bottom: -193px;
   }
   .control-bar {
-    margin-bottom: 18px;
-    padding-top: 14px;
+    margin-top: 0;
+    margin-bottom: 8px;
+    padding-top: 10px;
+    min-height: 92px;
   }
-  .control-actions button { height: 38px; }
-  .app-footer { padding-top: 14px; padding-bottom: 14px; }
+  .control-actions button { height: 36px; }
+  .hero-raise { gap: 4px; }
+  .hero-slider input[type=number] { height: 28px; }
+  .app-footer { display: none; }
 }
 
-@media (min-width: 801px) and (max-height: 780px) {
-  .app-header { height: 54px; }
-  .game-area { padding-top: 12px; }
+@media (min-width: 801px) and (max-height: 800px) {
+  .poker-app { grid-template-rows: 46px minmax(0, 1fr) auto; }
+  .app-header { height: 46px; }
+  .game-area { padding-top: 6px; }
+  .table-scroll { height: 470px; }
   .table-stage {
-    transform: scale(.68);
-    margin-top: 6px;
-    margin-bottom: -221px;
+    transform: scale(.63);
+    margin-top: 2px;
+    margin-bottom: -255px;
   }
   .control-bar {
-    margin-bottom: 10px;
-    padding-top: 10px;
+    min-height: 82px;
+    padding-top: 7px;
+    margin-bottom: 5px;
   }
-  .app-footer { display: none; }
+  .control-subtitle { font-size: 15px; }
 }
