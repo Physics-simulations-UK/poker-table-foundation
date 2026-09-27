@@ -50,9 +50,17 @@ export function resolveShowdown(game: GameState): ShowdownResult {
   const payouts = new Map<number, number>();
   const winningSeats = new Set<number>();
   const layers = buildPotLayers(game);
-  // Compatibility for fixtures/legacy states that store an already-collected
-  // pot without totalCommitted data.
-  if (layers.length === 0 && game.pot > 0) layers.push({ amount: game.pot, eligible: contenders.map(({ seat }) => seat) });
+  const committedTotal = game.players.reduce((sum, p) => sum + p.totalCommitted, 0);
+  const tableTotal = game.pot + game.players.reduce((sum, p) => sum + p.streetBet, 0);
+
+  // totalCommitted defines side-pot eligibility. game.pot/streetBet define the
+  // chips physically on the table. Normal engine states contain the same chips
+  // in both representations, while older fixtures may provide only game.pot.
+  if (committedTotal === 0 && tableTotal > 0) {
+    layers.push({ amount: tableTotal, eligible: contenders.map(({ seat }) => seat) });
+  } else if (tableTotal > committedTotal) {
+    layers.push({ amount: tableTotal - committedTotal, eligible: contenders.map(({ seat }) => seat) });
+  }
 
   for (const layer of layers) {
     if (layer.eligible.length === 0) continue;
@@ -73,11 +81,9 @@ export function resolveShowdown(game: GameState): ShowdownResult {
     }
   }
 
-  // If completed-street chips exist in pot in addition to contribution records,
-  // totalCommitted already represents those chips, so do not count game.pot twice.
   const distributed = [...payouts.values()].reduce((a, b) => a + b, 0);
-  const expected = game.players.reduce((sum, p) => sum + p.totalCommitted, 0);
-  if (expected > 0 && distributed !== expected) throw new Error("Side-pot distribution did not conserve committed chips");
+  const expected = Math.max(committedTotal, tableTotal);
+  if (distributed !== expected) throw new Error("Side-pot distribution did not conserve chips");
 
   const players = game.players.map((player, seat) => ({
     ...player, stack: player.stack + (payouts.get(seat) ?? 0), streetBet: 0,
