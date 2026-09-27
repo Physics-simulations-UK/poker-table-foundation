@@ -232,6 +232,20 @@
   .control-actions button { height: 36px; }
   .hero-raise { gap: 4px; }
   .hero-slider input[type=number] { height: 28px; }
+
+  /* Readability boost without enlarging the table itself. */
+  .seat { width: 184px; }
+  .seat-info { width: 178px; min-height: 58px; padding: 10px 13px 11px; }
+  .seat-name { font-size: 16px; }
+  .seat-stack { font-size: 15px; }
+  .seat-stack small { font-size: 10px; }
+  .seat-position { font-size: 10px; }
+  .seat-action { font-size: 9px; padding: 3px 7px; }
+  .seat-cards { height: 94px; gap: 5px; }
+  .seat .playing-card { width: 64px; height: 88px; }
+  .seat:not(.seat-hero) .seat-cards { transform: scale(.84); }
+  .seat-hero .playing-card { width: 68px; height: 94px; }
+  .seat-hero .seat-info { width: 184px; }
   .app-footer { display: none; }
 }
 
