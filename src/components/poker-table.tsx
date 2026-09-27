@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { nextHand, type Card, type GameState, type Player } from "@/lib/poker";
@@ -80,6 +80,33 @@ function HeroControls({ game, onAction }: { game: GameState; onAction: (a: BetAc
 export function PokerTable({ initialGame }: { initialGame: GameState }) {
   const [game, setGame] = useState(initialGame);
   const tableScroll = useRef<HTMLDivElement>(null);
+  const [tableScale, setTableScale] = useState(1);
+
+  // Scale the fixed logical poker-table canvas to the actual space available.
+  // This is viewport/container driven rather than tied to any particular device.
+  useLayoutEffect(() => {
+    const element = tableScroll.current;
+    if (!element) return;
+
+    const updateScale = () => {
+      if (window.innerWidth <= 800) {
+        setTableScale(1);
+        return;
+      }
+      const widthScale = element.clientWidth / 1100;
+      const heightScale = element.clientHeight / 690;
+      setTableScale(Math.min(1.08, widthScale, heightScale));
+    };
+
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(element);
+    window.addEventListener("resize", updateScale);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScale);
+    };
+  }, []);
   useEffect(() => {
     const element = tableScroll.current;
     if (element && window.innerWidth <= 800) element.scrollLeft = (element.scrollWidth - element.clientWidth) / 2;
@@ -108,7 +135,10 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
       <section className="game-area" aria-label="Poker table">
         <div className="table-heading"><span>THE TABLE <span className="heading-line" /></span><span>HAND {String(game.handNumber).padStart(2, "0")} <span className="heading-separator">/</span> {game.street.toUpperCase()}</span></div>
         <div className="table-scroll" ref={tableScroll}>
-          <div className="table-stage">
+          <div
+            className="table-stage"
+            style={window.innerWidth > 800 ? { transform: `translateX(-50%) scale(${tableScale})` } : undefined}
+          >
             <div className="table-outer"><div className="table-rail"><div className="table-felt">
               <div className="felt-border" />
               <div className="felt-brand"><span className="felt-brand-symbol">♠</span><span>POKER COACH</span></div>
