@@ -48,18 +48,22 @@ describe("betting street progression", () => {
     expect(game.actor).toBe(5);
   });
 
-  it("stops after river betting with the pot preserved for showdown", () => {
+  it("resolves showdown after river betting and preserves all chips", () => {
     let game = checkThroughRound(createHand(4, 1));
     game = checkThroughRound(game);
     game = checkThroughRound(game);
-    const beforeRiver = potTotal(game);
+    const chipsBeforeShowdown =
+      game.players.reduce((sum, player) => sum + player.stack, 0) + potTotal(game);
 
     game = checkThroughRound(game);
 
+    const chipsAfterShowdown =
+      game.players.reduce((sum, player) => sum + player.stack, 0) + potTotal(game);
     expect(game.street).toBe("complete");
     expect(game.actor).toBeNull();
     expect(game.revealedCount).toBe(5);
-    expect(game.pot).toBe(beforeRiver);
-    expect(game.message).toBe("River betting complete — showdown coming next.");
+    expect(game.pot).toBe(0);
+    expect(chipsAfterShowdown).toBe(chipsBeforeShowdown);
+    expect(game.message).toMatch(/WINS|SPLIT/);
   });
 });
