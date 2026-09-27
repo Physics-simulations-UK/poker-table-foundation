@@ -87,4 +87,51 @@ describe("showdown resolution", () => {
     const game = { ...showdownGame(), revealedCount: 4 as const };
     expect(() => resolveShowdown(game)).toThrow("all five community cards");
   });
+
+  it("awards a short-stack winner only the main pot and a deeper player the side pot", () => {
+    const game = showdownGame();
+    game.pot = 0;
+    game.communityCards = cards("2c 7d 9h Js Kc") as GameState["communityCards"];
+    game.players = game.players.map((p, seat) => ({
+      ...p,
+      folded: seat > 2,
+      streetBet: 0,
+      totalCommitted: seat === 0 ? 200 : seat <= 2 ? 500 : 0,
+      stack: seat === 0 ? 0 : seat <= 2 ? 500 : p.stack,
+      allIn: seat <= 2,
+    }));
+    game.players[0] = { ...game.players[0]!, cards: cards("As Ad") as [Card, Card] };
+    game.players[1] = { ...game.players[1]!, cards: cards("Qs Qd") as [Card, Card] };
+    game.players[2] = { ...game.players[2]!, cards: cards("10s 10d") as [Card, Card] };
+    const stacks = game.players.map((p) => p.stack);
+
+    const result = resolveShowdown(game);
+
+    // Main pot: 20BB x 3 = 60BB to seat 0 (AA).
+    expect(result.game.players[0]!.stack).toBe(stacks[0]! + 600);
+    // Side pot: remaining 30BB x 2 = 60BB to seat 1 (QQ).
+    expect(result.game.players[1]!.stack).toBe(stacks[1]! + 600);
+    expect(result.game.players[2]!.stack).toBe(stacks[2]);
+    expect(result.winners).toEqual(expect.arrayContaining([0, 1]));
+  });
+
+  it("includes folded chips in pots but never lets a folded player win", () => {
+    const game = showdownGame();
+    game.pot = 0;
+    game.players = game.players.map((p, seat) => ({
+      ...p,
+      folded: seat === 2 || seat > 2,
+      totalCommitted: seat <= 2 ? 200 : 0,
+      streetBet: 0,
+    }));
+    game.players[0] = { ...game.players[0]!, cards: cards("Ks Kd") as [Card, Card] };
+    game.players[1] = { ...game.players[1]!, cards: cards("Qs Qd") as [Card, Card] };
+    game.players[2] = { ...game.players[2]!, cards: cards("As Ad") as [Card, Card], folded: true };
+    const before = game.players[0]!.stack;
+
+    const result = resolveShowdown(game);
+    expect(result.winners).toEqual([0]);
+    expect(result.game.players[0]!.stack).toBe(before + 600);
+  });
+
 });
