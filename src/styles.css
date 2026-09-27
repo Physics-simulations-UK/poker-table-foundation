@@ -214,14 +214,14 @@
   }
   .table-heading { margin-bottom: 2px; }
   .table-scroll {
-    height: 485px;
+    height: 535px;
     overflow: visible;
   }
   .table-stage {
-    transform: scale(.68);
+    transform: scale(.75);
     transform-origin: top center;
     margin: 4px auto 0;
-    margin-bottom: -221px;
+    margin-bottom: -172px;
   }
   .control-bar {
     margin-top: 0;
@@ -239,11 +239,11 @@
   .poker-app { grid-template-rows: 46px minmax(0, 1fr) auto; }
   .app-header { height: 44px; }
   .game-area { padding-top: 3px; }
-  .table-scroll { height: 435px; }
+  .table-scroll { height: 470px; }
   .table-stage {
-    transform: scale(.60);
+    transform: scale(.65);
     margin-top: 2px;
-    margin-bottom: -276px;
+    margin-bottom: -241px;
   }
   .control-bar {
     min-height: 82px;
