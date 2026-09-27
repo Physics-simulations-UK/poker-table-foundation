@@ -114,11 +114,33 @@ function collectBets(game: GameState): GameState {
 
 function finishRound(game: GameState): GameState {
   const collected = collectBets(game);
-  if (game.street === "preflop") {
-    // Flop betting is not implemented yet: reveal the flop and stop.
-    return { ...collected, street: "flop", revealedCount: 3, actor: null, message: "Preflop complete — flop betting coming next." };
+
+  if (game.street === "river") {
+    return {
+      ...collected,
+      street: "complete",
+      actor: null,
+      message: "River betting complete — showdown coming next.",
+    };
   }
-  return { ...collected, actor: null };
+
+  const nextStreet: Street =
+    game.street === "preflop" ? "flop" :
+    game.street === "flop" ? "turn" :
+    "river";
+  const revealedCount: GameState["revealedCount"] =
+    nextStreet === "flop" ? 3 :
+    nextStreet === "turn" ? 4 :
+    5;
+
+  // Postflop action begins with the first active player clockwise from the
+  // dealer. startBettingRound skips folded and all-in players.
+  const next = startBettingRound(collected, nextStreet, game.dealerSeat);
+  return {
+    ...next,
+    revealedCount,
+    message: null,
+  };
 }
 
 export function applyAction(game: GameState, action: BetAction): GameState {
