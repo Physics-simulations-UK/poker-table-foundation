@@ -120,6 +120,13 @@ function finishRound(game: GameState): GameState {
     return resolveShowdown({ ...collected, revealedCount: 5 }).game;
   }
 
+  // If fewer than two live players still have chips behind, no further
+  // betting decisions are possible. Reveal the remaining board and settle.
+  const liveCanAct = collected.players.filter((p) => !p.folded && !p.allIn);
+  if (liveCanAct.length < 2) {
+    return resolveShowdown({ ...collected, revealedCount: 5, street: "river", actor: null }).game;
+  }
+
   const nextStreet: Street =
     game.street === "preflop" ? "flop" :
     game.street === "flop" ? "turn" :
