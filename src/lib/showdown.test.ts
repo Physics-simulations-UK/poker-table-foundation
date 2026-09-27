@@ -23,6 +23,9 @@ function showdownGame(): GameState {
       ...p,
       folded: seat > 1,
       streetBet: 0,
+      // This fixture supplies game.pot directly, so clear the blind
+      // contributions inherited from createHand().
+      totalCommitted: 0,
       cards: (seat === 0 ? cards("Ad Kc") : seat === 1 ? cards("Ac Qc") : p.cards) as [Card, Card],
     })),
   };
