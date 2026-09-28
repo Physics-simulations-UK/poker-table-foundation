@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionVersusOpen, handNotation, shouldOpenRaise } from "@/lib/preflop-strategy";
+import { actionVersusFourBet, actionVersusOpen, actionVersusOpenWithCallers, actionVersusThreeBet, handNotation, shouldOpenRaise } from "@/lib/preflop-strategy";
 import type { Card } from "@/lib/poker";
 
 const card = (rank: Card["rank"], suit: Card["suit"]): Card => ({ rank, suit });
@@ -75,5 +75,35 @@ describe("position-aware response to one open raise", () => {
 
   it("still folds trash in the big blind", () => {
     expect(actionVersusOpen(cards("7", "2"), "BB", "BTN")).toBe("fold");
+  });
+});
+
+
+describe("complete preflop continuation tree", () => {
+  const cards = (a: Card["rank"], b: Card["rank"], suited = false): [Card, Card] =>
+    hand(card(a, "spades"), card(b, suited ? "spades" : "hearts"));
+
+  it("overcalls useful multiway hands instead of treating a caller as a 3-bet", () => {
+    expect(actionVersusOpenWithCallers(cards("6", "6"), "BTN", "HJ")).toBe("call");
+    expect(actionVersusOpenWithCallers(cards("9", "8", true), "BB", "CO")).toBe("call");
+    expect(actionVersusOpenWithCallers(cards("7", "2"), "BB", "BTN")).toBe("fold");
+  });
+
+  it("squeezes premium hands over an open and callers", () => {
+    expect(actionVersusOpenWithCallers(cards("A", "A"), "BTN", "HJ")).toBe("3bet");
+    expect(actionVersusOpenWithCallers(cards("A", "Q"), "BB", "CO")).toBe("3bet");
+  });
+
+  it("continues sensibly after its open is 3-bet", () => {
+    expect(actionVersusThreeBet(cards("A", "A"), "UTG")).toBe("4bet");
+    expect(actionVersusThreeBet(cards("Q", "Q"), "UTG")).toBe("call");
+    expect(actionVersusThreeBet(cards("9", "9"), "UTG")).toBe("fold");
+    expect(actionVersusThreeBet(cards("9", "9"), "BTN")).toBe("call");
+  });
+
+  it("uses a value-heavy response to a 4-bet", () => {
+    expect(actionVersusFourBet(cards("A", "A"))).toBe("5bet");
+    expect(actionVersusFourBet(cards("A", "K"))).toBe("call");
+    expect(actionVersusFourBet(cards("J", "J"))).toBe("fold");
   });
 });
