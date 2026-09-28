@@ -230,50 +230,67 @@ function postflopGame(
   };
 }
 
-describe("v0.4 board-aware postflop bot integration", () => {
-  it("raises a flopped set when facing a bet", () => {
+describe("v0.4 mixed postflop bot integration", () => {
+  it("can raise a flopped set when facing a bet", () => {
     const game = postflopGame(
       [card("6", "spades"), card("6", "diamonds")],
       [card("A", "hearts"), card("6", "clubs"), card("3", "spades")],
       { currentBet: 30, pot: 100 },
     );
-    expect(decideBotAction(game)).toEqual({ type: "raise", to: 90 });
+    expect(decideBotAction(game, 0.9)).toEqual({ type: "raise", to: 90 });
   });
 
-  it("value bets flopped two pair when checked to", () => {
+  it("can value bet flopped two pair when checked to", () => {
     const game = postflopGame(
       [card("9", "spades"), card("8", "spades")],
       [card("9", "hearts"), card("8", "clubs"), card("2", "diamonds")],
       { pot: 90 },
     );
-    const action = decideBotAction(game);
-    expect(action.type).toBe("raise");
+    expect(decideBotAction(game, 0.5).type).toBe("raise");
   });
 
-  it("calls with top pair at an ordinary price", () => {
+  it("can call with top pair at an ordinary price", () => {
     const game = postflopGame(
       [card("A", "spades"), card("9", "diamonds")],
       [card("A", "hearts"), card("7", "clubs"), card("2", "spades")],
       { currentBet: 30, pot: 100 },
     );
-    expect(decideBotAction(game)).toEqual({ type: "call" });
+    expect(decideBotAction(game, 0.5)).toEqual({ type: "call" });
   });
 
-  it("continues with a flush draw instead of folding mechanically", () => {
+  it("can continue with a flush draw instead of folding mechanically", () => {
     const game = postflopGame(
       [card("A", "spades"), card("5", "spades")],
       [card("K", "spades"), card("8", "spades"), card("2", "diamonds")],
       { currentBet: 30, pot: 100 },
     );
-    expect(decideBotAction(game)).toEqual({ type: "call" });
+    expect(decideBotAction(game, 0.5)).toEqual({ type: "call" });
   });
 
-  it("folds missed AK to meaningful pressure", () => {
+  it("usually folds missed AK to meaningful pressure", () => {
     const game = postflopGame(
       [card("A", "spades"), card("K", "diamonds")],
       [card("9", "hearts"), card("7", "clubs"), card("2", "spades")],
       { currentBet: 50, pot: 100 },
     );
-    expect(decideBotAction(game)).toEqual({ type: "fold" });
+    expect(decideBotAction(game, 0.2)).toEqual({ type: "fold" });
+  });
+
+  it("can slow-play a strong made hand by checking", () => {
+    const game = postflopGame(
+      [card("6", "spades"), card("6", "diamonds")],
+      [card("A", "hearts"), card("6", "clubs"), card("3", "spades")],
+      { pot: 100 },
+    );
+    expect(decideBotAction(game, 0.1)).toEqual({ type: "check" });
+  });
+
+  it("can continue useful overcards against a cheap bet", () => {
+    const game = postflopGame(
+      [card("A", "spades"), card("K", "diamonds")],
+      [card("Q", "hearts"), card("7", "clubs"), card("2", "spades")],
+      { currentBet: 15, pot: 100 },
+    );
+    expect(decideBotAction(game, 0.7)).toEqual({ type: "call" });
   });
 });
