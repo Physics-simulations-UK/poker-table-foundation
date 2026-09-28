@@ -194,3 +194,90 @@ describe("v0.4 complete preflop tree integration", () => {
     expect(decideBotAction(facingOpenAndCaller(hand, "BB"))).toEqual({ type: "fold" });
   });
 });
+
+
+function postflopGame(
+  botCards: [Card, Card],
+  board: Card[],
+  options: { currentBet?: number; botStreetBet?: number; pot?: number } = {},
+): GameState {
+  const filler: [Card, Card] = [card("K", "clubs"), card("4", "diamonds")];
+  const currentBet = options.currentBet ?? 0;
+  const botStreetBet = options.botStreetBet ?? 0;
+  return {
+    players: [
+      player(0, filler, {
+        position: "BTN", stack: 90 * BIG_BLIND, streetBet: currentBet,
+        totalCommitted: currentBet, hasActed: currentBet > 0,
+        lastAction: currentBet > 0 ? `RAISE TO ${currentBet / BIG_BLIND}BB` : "CHECK",
+      }),
+      player(1, botCards, {
+        position: "BB", stack: 90 * BIG_BLIND, streetBet: botStreetBet,
+        totalCommitted: botStreetBet, hasActed: false,
+      }),
+      player(2, filler, { folded: true }),
+      player(3, filler, { folded: true }),
+      player(4, filler, { folded: true }),
+      player(5, filler, { folded: true }),
+    ],
+    communityCards: [...board, ...Array(Math.max(0, 5 - board.length)).fill(card("2", "clubs"))].slice(0, 5),
+    revealedCount: board.length as 3 | 4 | 5,
+    dealerSeat: 0,
+    handNumber: 1,
+    street: board.length === 3 ? "flop" : board.length === 4 ? "turn" : "river",
+    pot: options.pot ?? 100,
+    currentBet,
+    minRaise: BIG_BLIND,
+    actor: 1,
+    winner: null,
+    message: null,
+  };
+}
+
+describe("v0.4 board-aware postflop bot integration", () => {
+  it("raises a flopped set when facing a bet", () => {
+    const game = postflopGame(
+      [card("6", "spades"), card("6", "diamonds")],
+      [card("A", "hearts"), card("6", "clubs"), card("3", "spades")],
+      { currentBet: 30, pot: 100 },
+    );
+    expect(decideBotAction(game)).toEqual({ type: "raise", to: 90 });
+  });
+
+  it("value bets flopped two pair when checked to", () => {
+    const game = postflopGame(
+      [card("9", "spades"), card("8", "spades")],
+      [card("9", "hearts"), card("8", "clubs"), card("2", "diamonds")],
+      { pot: 90 },
+    );
+    const action = decideBotAction(game);
+    expect(action.type).toBe("raise");
+  });
+
+  it("calls with top pair at an ordinary price", () => {
+    const game = postflopGame(
+      [card("A", "spades"), card("9", "diamonds")],
+      [card("A", "hearts"), card("7", "clubs"), card("2", "spades")],
+      { currentBet: 30, pot: 100 },
+    );
+    expect(decideBotAction(game)).toEqual({ type: "call" });
+  });
+
+  it("continues with a flush draw instead of folding mechanically", () => {
+    const game = postflopGame(
+      [card("A", "spades"), card("5", "spades")],
+      [card("K", "spades"), card("8", "spades"), card("2", "diamonds")],
+      { currentBet: 30, pot: 100 },
+    );
+    expect(decideBotAction(game)).toEqual({ type: "call" });
+  });
+
+  it("folds missed AK to meaningful pressure", () => {
+    const game = postflopGame(
+      [card("A", "spades"), card("K", "diamonds")],
+      [card("9", "hearts"), card("7", "clubs"), card("2", "spades")],
+      { currentBet: 50, pot: 100 },
+    );
+    expect(decideBotAction(game)).toEqual({ type: "fold" });
+  });
+});
