@@ -37,7 +37,7 @@ describe("mixed postflop strategy", () => {
   });
 
   it("gives a genuine combo draw meaningful semi-bluff frequency", () => {
-    const hand = analyzePostflop(hole("9s 8s"), cards("7s 6h 2d"));
+    const hand = analyzePostflop(hole("9s 8s"), cards("7s 6h 2s"));
     const strategy = normalizeStrategy(mixedPostflopStrategy(hand, ctx({ toCall: 30, potOdds: 0.23 })));
     expect(strategy.raise).toBeGreaterThan(0.3);
     expect(strategy.call).toBeGreaterThan(0);
