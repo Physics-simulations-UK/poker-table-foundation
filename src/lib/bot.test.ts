@@ -230,6 +230,35 @@ function postflopGame(
   };
 }
 
+describe("v0.4 live balanced bet sizing", () => {
+  it("can use a small size with a strong made hand", () => {
+    const game = postflopGame(
+      [card("9", "spades"), card("8", "spades")],
+      [card("9", "hearts"), card("8", "clubs"), card("2", "diamonds")],
+      { pot: 90 },
+    );
+    expect(decideBotAction(game, 0.5, 0.1)).toEqual({ type: "raise", to: 30 });
+  });
+
+  it("can use a medium size with the same strong made hand", () => {
+    const game = postflopGame(
+      [card("9", "spades"), card("8", "spades")],
+      [card("9", "hearts"), card("8", "clubs"), card("2", "diamonds")],
+      { pot: 90 },
+    );
+    expect(decideBotAction(game, 0.5, 0.7)).toEqual({ type: "raise", to: 59 });
+  });
+
+  it("can use a large size with the same strong made hand", () => {
+    const game = postflopGame(
+      [card("9", "spades"), card("8", "spades")],
+      [card("9", "hearts"), card("8", "clubs"), card("2", "diamonds")],
+      { pot: 90 },
+    );
+    expect(decideBotAction(game, 0.5, 0.95)).toEqual({ type: "raise", to: 81 });
+  });
+});
+
 describe("v0.4 mixed postflop bot integration", () => {
   it("can raise a flopped set when facing a bet", () => {
     const game = postflopGame(
