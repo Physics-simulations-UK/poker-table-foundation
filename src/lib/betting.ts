@@ -151,6 +151,7 @@ export function applyAction(game: GameState, action: BetAction): GameState {
   const seat = game.actor;
   if (!legal || seat === null) return game;
   const player = game.players[seat]!;
+  const potBefore = potTotal(game);
   let updated: Player = player;
   let { currentBet, minRaise } = game;
   let reopen = false;
@@ -185,12 +186,23 @@ export function applyAction(game: GameState, action: BetAction): GameState {
   }
   updated = { ...updated, hasActed: true };
 
+  const historyEntry = {
+    street: game.street,
+    seat,
+    position: player.position,
+    type: action.type,
+    amount: Math.max(0, updated.streetBet - player.streetBet),
+    to: updated.streetBet,
+    potBefore,
+  } as const;
+  const actionHistory = [...game.actionHistory, historyEntry];
+
   const players = game.players.map((p, i) => {
     if (i === seat) return updated;
     // A full raise reopens action for everyone still able to act.
     return reopen && canAct(p) ? { ...p, hasActed: false } : p;
   });
-  const next: GameState = { ...game, players, currentBet, minRaise };
+  const next: GameState = { ...game, players, currentBet, minRaise, actionHistory };
 
   const remaining = players.map((p, i) => (p.folded ? -1 : i)).filter((i) => i >= 0);
   if (remaining.length === 1) return awardToLastPlayer(next, remaining[0]!);
