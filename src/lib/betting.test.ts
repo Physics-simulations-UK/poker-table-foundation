@@ -99,4 +99,42 @@ describe("betting street progression", () => {
     expect(game.pot).toBe(0);
     expect(game.message).toMatch(/WINS|SPLIT/);
   });
+
+  it("records ordered voluntary actions with street, seat, amount and pot context", () => {
+    let game = createHand(4, 1);
+    const firstSeat = game.actor!;
+    const first = game.players[firstSeat]!;
+    game = applyAction(game, { type: "raise", to: 30 });
+    const secondSeat = game.actor!;
+    game = applyAction(game, { type: "call" });
+
+    expect(game.actionHistory).toHaveLength(2);
+    expect(game.actionHistory[0]).toMatchObject({
+      street: "preflop", seat: firstSeat, position: first.position,
+      type: "raise", amount: 30, to: 30, potBefore: 15,
+    });
+    expect(game.actionHistory[1]).toMatchObject({
+      street: "preflop", seat: secondSeat, type: "call", amount: 30, to: 30,
+    });
+  });
+
+  it("preserves earlier street history after advancing to the flop", () => {
+    const flop = checkThroughRound(createHand(4, 1));
+    expect(flop.street).toBe("flop");
+    expect(flop.actionHistory).toHaveLength(6);
+    expect(flop.actionHistory.every((action) => action.street === "preflop")).toBe(true);
+
+    const afterFlopAction = applyAction(flop, { type: "check" });
+    expect(afterFlopAction.actionHistory).toHaveLength(7);
+    expect(afterFlopAction.actionHistory[6]?.street).toBe("flop");
+    expect(afterFlopAction.actionHistory[6]?.type).toBe("check");
+  });
+
+  it("starts each new hand with an empty action history", () => {
+    let game = createHand(4, 1);
+    game = applyAction(game, game.currentBet === game.players[game.actor!]!.streetBet ? { type: "check" } : { type: "call" });
+    expect(game.actionHistory.length).toBeGreaterThan(0);
+    const fresh = createHand(5, 2, game.players.map((p) => p.stack));
+    expect(fresh.actionHistory).toEqual([]);
+  });
 });
