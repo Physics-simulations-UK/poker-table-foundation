@@ -89,7 +89,6 @@ describe("preflop bot facing a 100BB all-in", () => {
   });
 });
 
-
 function facingNormalRaise(cards: [Card, Card], position: Position, raiseBB = 3, openerPosition: Position = "BTN"): GameState {
   const game = facingDeepShove(cards);
   const actor = game.players[1]!;
@@ -114,46 +113,44 @@ function facingNormalRaise(cards: [Card, Card], position: Position, raiseBB = 3,
 describe("preflop bot facing a normal open", () => {
   it("defends a small pair from the big blind", () => {
     const hand: [Card, Card] = [card("5", "spades"), card("5", "hearts")];
-    expect(decideBotAction(facingNormalRaise(hand, "BB"))).toEqual({ type: "call" });
+    expect(decideBotAction(facingNormalRaise(hand, "BB"), 0.5)).toEqual({ type: "call" });
   });
 
   it("defends a suited connector on the button", () => {
     const hand: [Card, Card] = [card("9", "spades"), card("8", "spades")];
-    expect(decideBotAction(facingNormalRaise(hand, "BTN"))).toEqual({ type: "call" });
+    expect(decideBotAction(facingNormalRaise(hand, "BTN"), 0.5)).toEqual({ type: "call" });
   });
 
   it("defends suited ace from the big blind", () => {
     const hand: [Card, Card] = [card("A", "spades"), card("8", "spades")];
-    expect(decideBotAction(facingNormalRaise(hand, "BB"))).toEqual({ type: "call" });
+    expect(decideBotAction(facingNormalRaise(hand, "BB"), 0.5)).toEqual({ type: "call" });
   });
 
   it("still folds weak offsuit trash from early position", () => {
     const hand: [Card, Card] = [card("7", "clubs"), card("2", "diamonds")];
-    expect(decideBotAction(facingNormalRaise(hand, "HJ"))).toEqual({ type: "fold" });
+    expect(decideBotAction(facingNormalRaise(hand, "HJ"), 0.5)).toEqual({ type: "fold" });
   });
 });
 
-
 describe("v0.4 positional strategy integration", () => {
-  it("3-bets AQ from the big blind against a button open", () => {
+  it("can 3-bet AQ from the big blind against a button open", () => {
     const hand: [Card, Card] = [card("A", "spades"), card("Q", "hearts")];
-    expect(decideBotAction(facingNormalRaise(hand, "BB", 2.5, "BTN"))).toEqual({
+    expect(decideBotAction(facingNormalRaise(hand, "BB", 2.5, "BTN"), 0.99)).toEqual({
       type: "raise",
       to: 7.5 * BIG_BLIND,
     });
   });
 
-  it("folds A9 offsuit on the button against an UTG open", () => {
+  it("folds A9 offsuit on the button against an UTG open at a folding roll", () => {
     const hand: [Card, Card] = [card("A", "spades"), card("9", "hearts")];
-    expect(decideBotAction(facingNormalRaise(hand, "BTN", 3, "UTG"))).toEqual({ type: "fold" });
+    expect(decideBotAction(facingNormalRaise(hand, "BTN", 3, "UTG"), 0.01)).toEqual({ type: "fold" });
   });
 
-  it("calls A9 offsuit from the big blind against a button open", () => {
+  it("can call A9 offsuit from the big blind against a button open", () => {
     const hand: [Card, Card] = [card("A", "spades"), card("9", "hearts")];
-    expect(decideBotAction(facingNormalRaise(hand, "BB", 2.5, "BTN"))).toEqual({ type: "call" });
+    expect(decideBotAction(facingNormalRaise(hand, "BB", 2.5, "BTN"), 0.5)).toEqual({ type: "call" });
   });
 });
-
 
 function facingOpenAndCaller(cards: [Card, Card], position: Position): GameState {
   const game = facingNormalRaise(cards, position, 3, "CO");
@@ -171,19 +168,19 @@ function facingOpenAndCaller(cards: [Card, Card], position: Position): GameState
 }
 
 describe("v0.4 complete preflop tree integration", () => {
-  it("overcalls a pocket pair after an open and caller", () => {
+  it("can overcall a pocket pair after an open and caller", () => {
     const hand: [Card, Card] = [card("6", "spades"), card("6", "hearts")];
-    expect(decideBotAction(facingOpenAndCaller(hand, "BB"))).toEqual({ type: "call" });
+    expect(decideBotAction(facingOpenAndCaller(hand, "BB"), 0.5)).toEqual({ type: "call" });
   });
 
-  it("overcalls a suited connector after an open and caller", () => {
+  it("can overcall a suited connector after an open and caller", () => {
     const hand: [Card, Card] = [card("9", "spades"), card("8", "spades")];
-    expect(decideBotAction(facingOpenAndCaller(hand, "BB"))).toEqual({ type: "call" });
+    expect(decideBotAction(facingOpenAndCaller(hand, "BB"), 0.5)).toEqual({ type: "call" });
   });
 
-  it("squeezes a premium hand after an open and caller", () => {
+  it("can squeeze a premium hand after an open and caller", () => {
     const hand: [Card, Card] = [card("A", "spades"), card("A", "hearts")];
-    expect(decideBotAction(facingOpenAndCaller(hand, "BB"))).toEqual({
+    expect(decideBotAction(facingOpenAndCaller(hand, "BB"), 0.99)).toEqual({
       type: "raise",
       to: 9 * BIG_BLIND,
     });
@@ -191,10 +188,9 @@ describe("v0.4 complete preflop tree integration", () => {
 
   it("still folds trash after an open and caller", () => {
     const hand: [Card, Card] = [card("7", "spades"), card("2", "hearts")];
-    expect(decideBotAction(facingOpenAndCaller(hand, "BB"))).toEqual({ type: "fold" });
+    expect(decideBotAction(facingOpenAndCaller(hand, "BB"), 0.01)).toEqual({ type: "fold" });
   });
 });
-
 
 function postflopGame(
   botCards: [Card, Card],
