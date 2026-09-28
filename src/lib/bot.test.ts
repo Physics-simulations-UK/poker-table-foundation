@@ -90,7 +90,7 @@ describe("preflop bot facing a 100BB all-in", () => {
 });
 
 
-function facingNormalRaise(cards: [Card, Card], position: Position, raiseBB = 3): GameState {
+function facingNormalRaise(cards: [Card, Card], position: Position, raiseBB = 3, openerPosition: Position = "BTN"): GameState {
   const game = facingDeepShove(cards);
   const actor = game.players[1]!;
   const raiser = game.players[0]!;
@@ -101,7 +101,7 @@ function facingNormalRaise(cards: [Card, Card], position: Position, raiseBB = 3)
     actor: 1,
     players: game.players.map((p, seat) => {
       if (seat === 0) return {
-        ...raiser, stack: (100 - raiseBB) * BIG_BLIND, allIn: false,
+        ...raiser, position: openerPosition, stack: (100 - raiseBB) * BIG_BLIND, allIn: false,
         streetBet: raiseBB * BIG_BLIND, totalCommitted: raiseBB * BIG_BLIND,
         lastAction: `RAISE TO ${raiseBB}BB`,
       };
@@ -130,5 +130,26 @@ describe("preflop bot facing a normal open", () => {
   it("still folds weak offsuit trash from early position", () => {
     const hand: [Card, Card] = [card("7", "clubs"), card("2", "diamonds")];
     expect(decideBotAction(facingNormalRaise(hand, "HJ"))).toEqual({ type: "fold" });
+  });
+});
+
+
+describe("v0.4 positional strategy integration", () => {
+  it("3-bets AQ from the big blind against a button open", () => {
+    const hand: [Card, Card] = [card("A", "spades"), card("Q", "hearts")];
+    expect(decideBotAction(facingNormalRaise(hand, "BB", 2.5, "BTN"))).toEqual({
+      type: "raise",
+      to: 7.5 * BIG_BLIND,
+    });
+  });
+
+  it("folds A9 offsuit on the button against an UTG open", () => {
+    const hand: [Card, Card] = [card("A", "spades"), card("9", "hearts")];
+    expect(decideBotAction(facingNormalRaise(hand, "BTN", 3, "UTG"))).toEqual({ type: "fold" });
+  });
+
+  it("calls A9 offsuit from the big blind against a button open", () => {
+    const hand: [Card, Card] = [card("A", "spades"), card("9", "hearts")];
+    expect(decideBotAction(facingNormalRaise(hand, "BB", 2.5, "BTN"))).toEqual({ type: "call" });
   });
 });
