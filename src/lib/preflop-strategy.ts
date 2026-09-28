@@ -165,3 +165,64 @@ export function actionVersusOpen(
 
   return CALL_LATE_OPEN.has(hand) ? "call" : "fold";
 }
+
+
+export type VersusThreeBetAction = "fold" | "call" | "4bet";
+export type VersusFourBetAction = "fold" | "call" | "5bet";
+
+/** Continue after an open has already received one or more calls. */
+export function actionVersusOpenWithCallers(
+  cards: [Card, Card],
+  defender: Position,
+  opener: Position,
+): VersusOpenAction {
+  const hand = handNotation(cards);
+
+  // Premium hands still squeeze for value.
+  if (THREE_BET_VALUE.has(hand)) return "3bet";
+  if (["1010", "AQs", "AQo"].includes(hand)) return "3bet";
+
+  // Multiway price improves the value of pairs and suited hands, particularly
+  // from the blinds/button. Avoid bloating pots with weak offsuit holdings.
+  const multiwayCalls = new Set([
+    "99", "88", "77", "66", "55", "44", "33", "22",
+    "AJs", "A10s", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s",
+    "KQs", "KJs", "K10s", "QJs", "Q10s", "J10s", "J9s",
+    "109s", "98s", "87s", "76s", "65s", "54s",
+  ]);
+  if (multiwayCalls.has(hand)) return "call";
+
+  // Big blind can realise a little more equity because it closes the action.
+  if (defender === "BB" && ["K9s", "Q9s", "108s", "97s", "86s", "AJo", "KQo"].includes(hand)) {
+    return "call";
+  }
+
+  // Strong offsuit broadways can continue versus a late opener plus callers.
+  const lateOpen = opener === "CO" || opener === "BTN" || opener === "SB";
+  if (lateOpen && ["AJo", "A10o", "KQo", "KJo", "QJo"].includes(hand)) return "call";
+
+  return "fold";
+}
+
+/** Deterministic 100BB response after hero/bot opened and is facing a 3-bet. */
+export function actionVersusThreeBet(cards: [Card, Card], opener: Position): VersusThreeBetAction {
+  const hand = handNotation(cards);
+
+  if (["AA", "KK", "AKs"].includes(hand)) return "4bet";
+  if (["QQ", "JJ", "1010", "AKo", "AQs"].includes(hand)) return "call";
+
+  // Late-position opens are wider, so defend a correspondingly wider set.
+  if (opener === "CO" || opener === "BTN" || opener === "SB") {
+    if (["99", "88", "AJs", "A10s", "KQs", "KJs", "QJs", "J10s"].includes(hand)) return "call";
+  }
+
+  return "fold";
+}
+
+/** Deep 100BB response to a non-all-in 4-bet: deliberately value-heavy. */
+export function actionVersusFourBet(cards: [Card, Card]): VersusFourBetAction {
+  const hand = handNotation(cards);
+  if (["AA", "KK"].includes(hand)) return "5bet";
+  if (["QQ", "AKs", "AKo"].includes(hand)) return "call";
+  return "fold";
+}
