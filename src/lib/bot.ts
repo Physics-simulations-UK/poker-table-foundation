@@ -7,6 +7,8 @@ import { analyzePostflop } from "@/lib/postflop-analysis";
 import { analyzePostflopContext } from "@/lib/postflop-context";
 import { mixedPostflopStrategy } from "@/lib/postflop-mixed-strategy";
 import { postflopBetSizeStrategy, potFractionForSize } from "@/lib/postflop-bet-sizing";
+import { riverEquityFromHistory } from "@/lib/range-from-history";
+import { equityAdjustedRiverStrategy } from "@/lib/river-equity-strategy";
 
 const rankValue: Record<Rank, number> = { A: 14, K: 13, Q: 12, J: 11, "10": 10, "9": 9, "8": 8, "7": 7, "6": 6, "5": 5, "4": 4, "3": 3, "2": 2 };
 const chenPoints = (v: number) => (v === 14 ? 10 : v === 13 ? 8 : v === 12 ? 7 : v === 11 ? 6 : v / 2);
@@ -192,7 +194,32 @@ export function decideBotAction(game: GameState, strategyRoll?: number, sizingRo
     const board = game.communityCards.slice(0, game.revealedCount);
     const hand = analyzePostflop(player.cards, board);
     const context = analyzePostflopContext(game, board);
-    const intention = chooseMixedAction(mixedPostflopStrategy(hand, context), strategyRoll).action;
+    const baselineStrategy = mixedPostflopStrategy(hand, context);
+    let strategy = baselineStrategy;
+
+    // v0.5: in heads-up river spots facing a bet, adjust the existing mixed
+    // strategy using exact equity versus the opponent's range reconstructed
+    // from the complete observed hand history. Other postflop spots are
+    // intentionally unchanged.
+    if (game.street === "river" && context.toCall > 0 && context.activeOpponents === 1) {
+      const opponentSeat = game.players.findIndex(
+        (opponent, seat) => seat !== game.actor && !opponent.folded,
+      );
+      if (opponentSeat >= 0) {
+        const equity = riverEquityFromHistory(game, game.actor!, opponentSeat).equity;
+        strategy = equityAdjustedRiverStrategy(
+          {
+            fold: baselineStrategy.fold ?? 0,
+            call: (baselineStrategy.call ?? 0) + (baselineStrategy.check ?? 0),
+            raise: (baselineStrategy.raise ?? 0) + (baselineStrategy["bet-small"] ?? 0) + (baselineStrategy["bet-medium"] ?? 0),
+          },
+          equity,
+          context.potOdds,
+        );
+      }
+    }
+
+    const intention = chooseMixedAction(strategy, strategyRoll).action;
     const pot = potTotal(game);
     const sampledBetTarget = () => {
       const size = chooseMixedAction(postflopBetSizeStrategy(hand, context), sizingRoll ?? strategyRoll).action;
