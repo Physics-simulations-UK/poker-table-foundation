@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { handNotation, shouldOpenRaise } from "@/lib/preflop-strategy";
+import { actionVersusOpen, handNotation, shouldOpenRaise } from "@/lib/preflop-strategy";
 import type { Card } from "@/lib/poker";
 
 const card = (rank: Card["rank"], suit: Card["suit"]): Card => ({ rank, suit });
@@ -39,5 +39,41 @@ describe("6-max raise-first-in ranges", () => {
 
   it("does not use an RFI range for the big blind", () => {
     expect(shouldOpenRaise(hand(card("A", "spades"), card("A", "hearts")), "BB")).toBe(false);
+  });
+});
+
+
+describe("position-aware response to one open raise", () => {
+  const cards = (a: Card["rank"], b: Card["rank"], suited = false): [Card, Card] =>
+    hand(card(a, "spades"), card(b, suited ? "spades" : "hearts"));
+
+  it("3-bets premium hands against any opener", () => {
+    expect(actionVersusOpen(cards("A", "A"), "BTN", "UTG")).toBe("3bet");
+    expect(actionVersusOpen(cards("A", "K", true), "BB", "UTG")).toBe("3bet");
+  });
+
+  it("respects an early-position open", () => {
+    expect(actionVersusOpen(cards("A", "10", true), "BTN", "UTG")).toBe("call");
+    expect(actionVersusOpen(cards("A", "9"), "BTN", "UTG")).toBe("fold");
+    expect(actionVersusOpen(cards("5", "5"), "CO", "UTG")).toBe("fold");
+  });
+
+  it("widens against a late-position open", () => {
+    expect(actionVersusOpen(cards("5", "5"), "BTN", "CO")).toBe("call");
+    expect(actionVersusOpen(cards("A", "10"), "BTN", "CO")).toBe("call");
+  });
+
+  it("3-bets more hands against a steal", () => {
+    expect(actionVersusOpen(cards("A", "Q"), "BB", "BTN")).toBe("3bet");
+    expect(actionVersusOpen(cards("A", "5", true), "BB", "BTN")).toBe("3bet");
+  });
+
+  it("defends the big blind wider than other seats", () => {
+    expect(actionVersusOpen(cards("9", "7", true), "BB", "BTN")).toBe("call");
+    expect(actionVersusOpen(cards("9", "7", true), "HJ", "BTN")).toBe("fold");
+  });
+
+  it("still folds trash in the big blind", () => {
+    expect(actionVersusOpen(cards("7", "2"), "BB", "BTN")).toBe("fold");
   });
 });
