@@ -85,7 +85,7 @@ function shouldCallPreflopAllIn(game: GameState, score: number, toCall: number) 
 }
 
 /** Simple deterministic rule-based preflop decision for a computer opponent. */
-export function decideBotAction(game: GameState): BetAction {
+export function decideBotAction(game: GameState, strategyRoll?: number): BetAction {
   const legal = getLegalActions(game);
   const player = game.actor === null ? undefined : game.players[game.actor];
   if (!legal || !player) return { type: "fold" };
@@ -124,6 +124,7 @@ export function decideBotAction(game: GameState): BetAction {
     if (game.currentBet <= BIG_BLIND) {
       const intention = chooseMixedAction(
         mixedFirstInStrategy(player.cards, player.position),
+        strategyRoll,
       ).action;
       if (intention === "raise") return raiseTo(BIG_BLIND * 2.5);
       if (intention === "call") return call;
@@ -156,7 +157,7 @@ export function decideBotAction(game: GameState): BetAction {
       const strategy = callersAtPrice.length > 0
         ? mixedVersusOpenAndCallersStrategy(player.cards, player.position, opener.position, openSizeBB)
         : mixedVersusOpenStrategy(player.cards, player.position, opener.position, openSizeBB);
-      const intention = chooseMixedAction(strategy).action;
+      const intention = chooseMixedAction(strategy, strategyRoll).action;
       if (intention === "raise") return raiseTo(game.currentBet * 3);
       if (intention === "call") return call;
       return passive;
