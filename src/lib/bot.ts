@@ -1,6 +1,8 @@
 import { BIG_BLIND, getLegalActions, potTotal, type BetAction } from "@/lib/betting";
 import type { Card, GameState, Position, Rank } from "@/lib/poker";
-import { actionVersusFourBet, actionVersusOpen, actionVersusOpenWithCallers, actionVersusThreeBet, shouldOpenRaise } from "@/lib/preflop-strategy";
+import { actionVersusFourBet, actionVersusThreeBet } from "@/lib/preflop-strategy";
+import { mixedFirstInStrategy, mixedVersusOpenAndCallersStrategy, mixedVersusOpenStrategy } from "@/lib/preflop-mixed-strategy";
+import { chooseMixedAction } from "@/lib/mixed-strategy";
 import { analyzePostflop } from "@/lib/postflop-analysis";
 import { analyzePostflopContext } from "@/lib/postflop-context";
 import { decidePostflop } from "@/lib/postflop-strategy";
@@ -120,9 +122,11 @@ export function decideBotAction(game: GameState): BetAction {
   if (game.street === "preflop") {
     // Unopened pot (only the blinds have been posted).
     if (game.currentBet <= BIG_BLIND) {
-      if (shouldOpenRaise(player.cards, player.position)) return raiseTo(BIG_BLIND * 2.5);
-      // SB can complete some hands that are not strong enough for our RFI raise.
-      if (player.position === "SB" && score >= 6) return call;
+      const intention = chooseMixedAction(
+        mixedFirstInStrategy(player.cards, player.position),
+      ).action;
+      if (intention === "raise") return raiseTo(BIG_BLIND * 2.5);
+      if (intention === "call") return call;
       return passive;
     }
 
@@ -148,10 +152,12 @@ export function decideBotAction(game: GameState): BetAction {
     // 3-bet pot: later seats can overcall or squeeze using multiway ranges.
     if (game.currentBet < BIG_BLIND * 8 && raiseActors.length === 1) {
       const opener = raiseActors[0]!;
-      const intention = callersAtPrice.length > 0
-        ? actionVersusOpenWithCallers(player.cards, player.position, opener.position)
-        : actionVersusOpen(player.cards, player.position, opener.position);
-      if (intention === "3bet") return raiseTo(game.currentBet * 3);
+      const openSizeBB = game.currentBet / BIG_BLIND;
+      const strategy = callersAtPrice.length > 0
+        ? mixedVersusOpenAndCallersStrategy(player.cards, player.position, opener.position, openSizeBB)
+        : mixedVersusOpenStrategy(player.cards, player.position, opener.position, openSizeBB);
+      const intention = chooseMixedAction(strategy).action;
+      if (intention === "raise") return raiseTo(game.currentBet * 3);
       if (intention === "call") return call;
       return passive;
     }
