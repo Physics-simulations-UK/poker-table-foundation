@@ -6,6 +6,7 @@ import { chooseMixedAction } from "@/lib/mixed-strategy";
 import { analyzePostflop } from "@/lib/postflop-analysis";
 import { analyzePostflopContext } from "@/lib/postflop-context";
 import { mixedPostflopStrategy } from "@/lib/postflop-mixed-strategy";
+import { postflopBetSizeStrategy, potFractionForSize } from "@/lib/postflop-bet-sizing";
 
 const rankValue: Record<Rank, number> = { A: 14, K: 13, Q: 12, J: 11, "10": 10, "9": 9, "8": 8, "7": 7, "6": 6, "5": 5, "4": 4, "3": 3, "2": 2 };
 const chenPoints = (v: number) => (v === 14 ? 10 : v === 13 ? 8 : v === 12 ? 7 : v === 11 ? 6 : v / 2);
@@ -85,7 +86,7 @@ function shouldCallPreflopAllIn(game: GameState, score: number, toCall: number) 
 }
 
 /** Simple deterministic rule-based preflop decision for a computer opponent. */
-export function decideBotAction(game: GameState, strategyRoll?: number): BetAction {
+export function decideBotAction(game: GameState, strategyRoll?: number, sizingRoll?: number): BetAction {
   const legal = getLegalActions(game);
   const player = game.actor === null ? undefined : game.players[game.actor];
   if (!legal || !player) return { type: "fold" };
@@ -193,6 +194,10 @@ export function decideBotAction(game: GameState, strategyRoll?: number): BetActi
     const context = analyzePostflopContext(game, board);
     const intention = chooseMixedAction(mixedPostflopStrategy(hand, context), strategyRoll).action;
     const pot = potTotal(game);
+    const sampledBetTarget = () => {
+      const size = chooseMixedAction(postflopBetSizeStrategy(hand, context), sizingRoll ?? strategyRoll).action;
+      return player.streetBet + Math.max(BIG_BLIND, pot * potFractionForSize(size));
+    };
 
     switch (intention) {
       case "fold":
@@ -202,15 +207,15 @@ export function decideBotAction(game: GameState, strategyRoll?: number): BetActi
       case "call":
         return call;
       case "bet-small":
-        return raiseTo(player.streetBet + Math.max(BIG_BLIND, pot * 0.33));
+        return raiseTo(sampledBetTarget());
       case "bet-medium":
-        return raiseTo(player.streetBet + Math.max(BIG_BLIND, pot * 0.66));
+        return raiseTo(sampledBetTarget());
       case "raise": {
         // When facing a bet, use roughly a 3x raise. If checked to, a strong
         // hand uses a medium value bet instead.
         const target = game.currentBet > player.streetBet
           ? game.currentBet * 3
-          : player.streetBet + Math.max(BIG_BLIND, pot * 0.66);
+          : sampledBetTarget();
         return raiseTo(target);
       }
     }
