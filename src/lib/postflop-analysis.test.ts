@@ -69,4 +69,37 @@ describe("postflop hand analysis", () => {
     expect(result.straightDraw).toBe("open-ended");
     expect(result.straightOutRanks).toEqual([6, 14]);
   });
+
+  it("counts overcards to the visible board", () => {
+    expect(analyzePostflop(hole("As Kd"), cards("Qh 7c 2s")).overcards).toBe(2);
+    expect(analyzePostflop(hole("As 9d"), cards("Qh 7c 2s")).overcards).toBe(1);
+  });
+
+  it("distinguishes a real hole-card flush draw from a board-only four-flush", () => {
+    const real = analyzePostflop(hole("As 5d"), cards("Ks 8s 2s"));
+    const boardOnly = analyzePostflop(hole("Ah 5d"), cards("Ks 8s 2s 3s"));
+    expect(real.holeCardFlushDraw).toBe(true);
+    expect(boardOnly.flushDraw).toBe(true);
+    expect(boardOnly.holeCardFlushDraw).toBe(false);
+  });
+
+  it("recognises a flop backdoor flush draw using a hole card", () => {
+    const result = analyzePostflop(hole("As 5d"), cards("Ks 8c 2s"));
+    expect(result.flushDraw).toBe(false);
+    expect(result.backdoorFlushDraw).toBe(true);
+  });
+
+  it("distinguishes a hole-card straight draw from a board-only draw", () => {
+    const real = analyzePostflop(hole("9s 8d"), cards("7c 6h 2s"));
+    const boardOnly = analyzePostflop(hole("As Kd"), cards("9c 8h 7s 6d"));
+    expect(real.holeCardStraightDraw).toBe(true);
+    expect(boardOnly.straightDraw).not.toBeNull();
+    expect(boardOnly.holeCardStraightDraw).toBe(false);
+  });
+
+  it("recognises backdoor straight potential on the flop", () => {
+    const result = analyzePostflop(hole("9s 8d"), cards("6c Kh 2s"));
+    expect(result.straightDraw).toBeNull();
+    expect(result.backdoorStraightDraw).toBe(true);
+  });
 });
