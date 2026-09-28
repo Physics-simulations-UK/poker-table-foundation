@@ -6,6 +6,8 @@ export interface StrategyChoice<Action extends string> {
   distribution: Record<Action, number>;
 }
 
+const EPSILON = 1e-12;
+
 export function normalizeStrategy<Action extends string>(
   distribution: StrategyDistribution<Action>,
 ): Record<Action, number> {
@@ -19,15 +21,7 @@ export function normalizeStrategy<Action extends string>(
   const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
   if (total <= 0) throw new Error("Strategy distribution must contain positive weight");
 
-  const normalized = entries.map(([action, weight], index) => {
-    if (index === entries.length - 1) return [action, 0] as [Action, number];
-    return [action, weight / total] as [Action, number];
-  });
-
-  const used = normalized.slice(0, -1).reduce((sum, [, probability]) => sum + probability, 0);
-  normalized[normalized.length - 1]![1] = Math.max(0, 1 - used);
-
-  return Object.fromEntries(normalized) as Record<Action, number>;
+  return Object.fromEntries(entries.map(([action, weight]) => [action, weight / total])) as Record<Action, number>;
 }
 
 export function chooseMixedAction<Action extends string>(
@@ -44,7 +38,11 @@ export function chooseMixedAction<Action extends string>(
 
   for (const [action, probability] of entries) {
     cumulative += probability;
-    if (roll < cumulative) return { action, probability, distribution: normalized };
+    if (roll < cumulative || Math.abs(roll - cumulative) < EPSILON) {
+      const isBoundary = Math.abs(roll - cumulative) < EPSILON;
+      if (isBoundary) continue;
+      return { action, probability, distribution: normalized };
+    }
   }
 
   const [action, probability] = entries[entries.length - 1]!;
