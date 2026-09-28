@@ -5,7 +5,7 @@ import { mixedFirstInStrategy, mixedVersusOpenAndCallersStrategy, mixedVersusOpe
 import { chooseMixedAction } from "@/lib/mixed-strategy";
 import { analyzePostflop } from "@/lib/postflop-analysis";
 import { analyzePostflopContext } from "@/lib/postflop-context";
-import { decidePostflop } from "@/lib/postflop-strategy";
+import { mixedPostflopStrategy } from "@/lib/postflop-mixed-strategy";
 
 const rankValue: Record<Rank, number> = { A: 14, K: 13, Q: 12, J: 11, "10": 10, "9": 9, "8": 8, "7": 7, "6": 6, "5": 5, "4": 4, "3": 3, "2": 2 };
 const chenPoints = (v: number) => (v === 14 ? 10 : v === 13 ? 8 : v === 12 ? 7 : v === 11 ? 6 : v / 2);
@@ -191,7 +191,7 @@ export function decideBotAction(game: GameState, strategyRoll?: number): BetActi
     const board = game.communityCards.slice(0, game.revealedCount);
     const hand = analyzePostflop(player.cards, board);
     const context = analyzePostflopContext(game, board);
-    const intention = decidePostflop(hand, context);
+    const intention = chooseMixedAction(mixedPostflopStrategy(hand, context), strategyRoll).action;
     const pot = potTotal(game);
 
     switch (intention) {
