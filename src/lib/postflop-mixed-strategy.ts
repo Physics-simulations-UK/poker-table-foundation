@@ -35,15 +35,15 @@ export function mixedPostflopStrategy(
   const lowSpr = context.spr <= 3;
 
   if (monsters.has(hand.madeHand)) {
-    if (facingBet) return weights({ call: lowSpr ? 0.18 : 0.32, raise: lowSpr ? 0.82 : 0.68 });
+    if (facingBet) return weights({ call: lowSpr ? 0.30 : 0.46, raise: lowSpr ? 0.70 : 0.54 });
     return weights(boardWet || multiway
-      ? { check: 0.12, "bet-small": 0.28, "bet-medium": 0.60 }
-      : { check: 0.20, "bet-small": 0.58, "bet-medium": 0.22 });
+      ? { check: 0.24, "bet-small": 0.30, "bet-medium": 0.46 }
+      : { check: 0.32, "bet-small": 0.48, "bet-medium": 0.20 });
   }
 
   if (hand.madeHand === "two-pair") {
-    if (facingBet) return weights({ fold: 0.02, call: 0.53, raise: 0.45 });
-    return weights({ check: 0.18, "bet-small": boardWet ? 0.32 : 0.55, "bet-medium": boardWet ? 0.50 : 0.27 });
+    if (facingBet) return weights({ fold: 0.02, call: 0.63, raise: 0.35 });
+    return weights({ check: 0.28, "bet-small": boardWet ? 0.32 : 0.50, "bet-medium": boardWet ? 0.40 : 0.22 });
   }
 
   const strongPair = hand.madeHand === "pair" &&
@@ -52,11 +52,11 @@ export function mixedPostflopStrategy(
     if (facingBet) {
       const expensive = context.potOdds > 0.38;
       if (expensive && (boardWet || multiway)) return weights({ fold: 0.30, call: 0.60, raise: 0.10 });
-      return weights({ fold: 0.06, call: 0.76, raise: 0.18 });
+      return weights({ fold: 0.06, call: 0.78, raise: 0.16 });
     }
     return weights(boardWet || multiway
-      ? { check: 0.30, "bet-small": 0.38, "bet-medium": 0.32 }
-      : { check: 0.28, "bet-small": 0.60, "bet-medium": 0.12 });
+      ? { check: 0.38, "bet-small": 0.36, "bet-medium": 0.26 }
+      : { check: 0.36, "bet-small": 0.52, "bet-medium": 0.12 });
   }
 
   const realFlushDraw = hand.flushDraw && hand.holeCardFlushDraw;
@@ -69,8 +69,8 @@ export function mixedPostflopStrategy(
       const pricedOut = context.potOdds > 0.36;
       if (pricedOut) return weights({ fold: 0.45, call: 0.40, raise: 0.15 });
       return weights(comboDraw && !multiway
-        ? { fold: 0.03, call: 0.47, raise: 0.50 }
-        : { fold: 0.08, call: 0.72, raise: 0.20 });
+        ? { fold: 0.03, call: 0.42, raise: 0.55 }
+        : { fold: 0.08, call: 0.68, raise: 0.24 });
     }
     return weights(context.inPosition && !multiway
       ? { check: 0.36, "bet-small": 0.24, "bet-medium": 0.40 }
@@ -106,7 +106,7 @@ export function mixedPostflopStrategy(
     if (!hasPotential) return weights({ fold: 0.94, call: 0.05, raise: 0.01 });
     const cheap = context.potOdds <= 0.18;
     const callWeight = cheap ? 0.22 + hand.overcards * 0.08 + backdoors * 0.06 : 0.08;
-    const raiseWeight = !multiway && context.inPosition ? 0.06 + backdoors * 0.04 : 0.02;
+    const raiseWeight = !multiway && context.inPosition ? 0.08 + backdoors * 0.05 : 0.02;
     return weights({ fold: Math.max(0.50, 1 - callWeight - raiseWeight), call: callWeight, raise: raiseWeight });
   }
 
