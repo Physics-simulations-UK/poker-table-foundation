@@ -29,6 +29,21 @@ export interface Player {
   lastAction: string | null;
 }
 
+export type HandActionType = "fold" | "check" | "call" | "raise";
+
+export interface HandAction {
+  street: Street;
+  seat: number;
+  position: Position;
+  type: HandActionType;
+  /** Chips added by this action. */
+  amount: number;
+  /** Player total bet on this street after the action. */
+  to: number;
+  /** Pot size immediately before the action. */
+  potBefore: number;
+}
+
 export interface GameState {
   players: Player[];
   communityCards: [Card, Card, Card, Card, Card];
@@ -43,6 +58,8 @@ export interface GameState {
   actor: number | null;
   winner: { seat: number; amount: number } | null;
   message: string | null;
+  /** Ordered voluntary actions for this hand; forced blinds are omitted. */
+  actionHistory: HandAction[];
 }
 
 const suits: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
@@ -99,7 +116,7 @@ export function createHand(dealerSeat = 4, handNumber = 1, stacks?: number[]): G
   const communityCards: GameState["communityCards"] = [draw(), draw(), draw(), draw(), draw()];
   const base: GameState = {
     players, communityCards, revealedCount: 0, dealerSeat, handNumber,
-    street: "preflop", pot: 0, currentBet: 0, minRaise: BIG_BLIND, actor: null, winner: null, message: null,
+    street: "preflop", pot: 0, currentBet: 0, minRaise: BIG_BLIND, actor: null, winner: null, message: null, actionHistory: [],
   };
   return postBlinds(startBettingRound(base, "preflop", dealerSeat));
 }
