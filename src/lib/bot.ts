@@ -1,6 +1,6 @@
 import { BIG_BLIND, getLegalActions, type BetAction } from "@/lib/betting";
 import type { Card, GameState, Position, Rank } from "@/lib/poker";
-import { actionVersusOpen, shouldOpenRaise } from "@/lib/preflop-strategy";
+import { actionVersusFourBet, actionVersusOpen, actionVersusOpenWithCallers, actionVersusThreeBet, shouldOpenRaise } from "@/lib/preflop-strategy";
 
 const rankValue: Record<Rank, number> = { A: 14, K: 13, Q: 12, J: 11, "10": 10, "9": 9, "8": 8, "7": 7, "6": 6, "5": 5, "4": 4, "3": 3, "2": 2 };
 const chenPoints = (v: number) => (v === 14 ? 10 : v === 13 ? 8 : v === 12 ? 7 : v === 11 ? 6 : v / 2);
@@ -127,23 +127,56 @@ export function decideBotAction(game: GameState): BetAction {
     // whose street bet equals currentBet and whose last action was a raise is
     // the opener. If the state is more complex, fall through to the legacy
     // conservative 3-bet+ handling below.
-    const raisers = game.players.filter(
+    const raiseActors = game.players.filter(
+      (opponent, seat) =>
+        seat !== game.actor &&
+        !opponent.folded &&
+        opponent.lastAction?.startsWith("RAISE TO"),
+    );
+    const callersAtPrice = game.players.filter(
       (opponent, seat) =>
         seat !== game.actor &&
         !opponent.folded &&
         opponent.streetBet === game.currentBet &&
-        opponent.lastAction?.startsWith("RAISE TO"),
+        opponent.lastAction?.startsWith("CALL"),
     );
 
-    if (game.currentBet < BIG_BLIND * 8 && raisers.length === 1) {
-      const opener = raisers[0]!;
-      const intention = actionVersusOpen(player.cards, player.position, opener.position);
+    // One ordinary open. Crucially, callers no longer make this look like a
+    // 3-bet pot: later seats can overcall or squeeze using multiway ranges.
+    if (game.currentBet < BIG_BLIND * 8 && raiseActors.length === 1) {
+      const opener = raiseActors[0]!;
+      const intention = callersAtPrice.length > 0
+        ? actionVersusOpenWithCallers(player.cards, player.position, opener.position)
+        : actionVersusOpen(player.cards, player.position, opener.position);
       if (intention === "3bet") return raiseTo(game.currentBet * 3);
       if (intention === "call") return call;
       return passive;
     }
+
+    // Once a second raise has occurred, use the bot's own earlier action to
+    // distinguish defending its open from facing a later 4-bet.
+    if (game.currentBet < BIG_BLIND * 25 && raiseActors.length >= 2) {
+      const priorRaise = player.lastAction?.startsWith("RAISE TO") ?? false;
+      const priorCommitment = player.streetBet / BIG_BLIND;
+
+      if (priorRaise && priorCommitment <= 4) {
+        const intention = actionVersusThreeBet(player.cards, player.position);
+        if (intention === "4bet") return raiseTo(game.currentBet * 2.3);
+        if (intention === "call") return call;
+        return passive;
+      }
+
+      if (priorRaise && priorCommitment > 4) {
+        const intention = actionVersusFourBet(player.cards);
+        if (intention === "5bet") return raiseTo(legal.maxRaiseTo);
+        if (intention === "call") return call;
+        return passive;
+      }
+    }
   }
-  // Facing a 3-bet or more.
+
+  // Temporary postflop / unusual-state fallback. This will be replaced by
+  // board-aware poker intelligence in the next major strategy layer.
   if (score >= 14 && game.currentBet < BIG_BLIND * 25) return raiseTo(game.currentBet * 2.5);
   if (score >= 12) return call;
   if (score >= 10 && toCall <= BIG_BLIND * 6) return call;
