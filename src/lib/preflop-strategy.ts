@@ -100,3 +100,68 @@ export function shouldOpenRaise(cards: [Card, Card], position: Position): boolea
   if (position === "BB") return false;
   return RFI_RANGES[position].has(handNotation(cards));
 }
+
+
+export type VersusOpenAction = "fold" | "call" | "3bet";
+
+const THREE_BET_VALUE = new Set(["AA", "KK", "QQ", "JJ", "AKs", "AKo"]);
+const THREE_BET_LATE = new Set(["1010", "AQs", "AQo", "AJs", "KQs"]);
+const THREE_BET_BLIND = new Set(["1010", "99", "AQs", "AQo", "AJs", "A5s", "A4s", "KQs"]);
+
+const CALL_EARLY_OPEN = new Set([
+  "1010", "99", "88", "77", "66",
+  "AQs", "AJs", "A10s", "KQs", "KJs", "QJs", "J10s", "109s", "98s",
+  "AQo",
+]);
+
+const CALL_LATE_OPEN = new Set([
+  "88", "77", "66", "55", "44", "33", "22",
+  "A10s", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s",
+  "KJs", "K10s", "K9s", "QJs", "Q10s", "Q9s", "J10s", "J9s",
+  "109s", "98s", "87s", "76s", "65s",
+  "AJo", "A10o", "KQo", "KJo", "QJo",
+]);
+
+const CALL_BIG_BLIND = new Set([
+  ...CALL_EARLY_OPEN,
+  ...CALL_LATE_OPEN,
+  "K8s", "K7s", "Q8s", "J8s", "108s", "97s", "86s", "75s", "54s",
+  "A9o", "K10o", "Q10o", "J10o",
+]);
+
+/**
+ * Deterministic 100BB baseline response to one ordinary open raise.
+ *
+ * The opener's position matters: an early-position open is respected more,
+ * while CO/BTN/SB opens are defended more widely. The BB receives the widest
+ * calling range because it closes the action and has already invested 1BB.
+ * Mixed-frequency solver actions are intentionally deferred to a later layer.
+ */
+export function actionVersusOpen(
+  cards: [Card, Card],
+  defender: Position,
+  opener: Position,
+): VersusOpenAction {
+  const hand = handNotation(cards);
+  const earlyOpen = opener === "UTG" || opener === "HJ";
+  const lateOpen = opener === "CO" || opener === "BTN" || opener === "SB";
+
+  if (THREE_BET_VALUE.has(hand)) return "3bet";
+
+  // Widen value/semi-value 3-bets against steals, especially from the blinds.
+  if (lateOpen && (defender === "SB" || defender === "BB") && THREE_BET_BLIND.has(hand)) {
+    return "3bet";
+  }
+  if (lateOpen && THREE_BET_LATE.has(hand)) return "3bet";
+
+  if (defender === "BB") {
+    if (CALL_BIG_BLIND.has(hand)) return "call";
+    return "fold";
+  }
+
+  if (earlyOpen) {
+    return CALL_EARLY_OPEN.has(hand) ? "call" : "fold";
+  }
+
+  return CALL_LATE_OPEN.has(hand) ? "call" : "fold";
+}
