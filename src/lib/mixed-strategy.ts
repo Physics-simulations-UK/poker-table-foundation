@@ -19,7 +19,15 @@ export function normalizeStrategy<Action extends string>(
   const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
   if (total <= 0) throw new Error("Strategy distribution must contain positive weight");
 
-  return Object.fromEntries(entries.map(([action, weight]) => [action, weight / total])) as Record<Action, number>;
+  const normalized = entries.map(([action, weight], index) => {
+    if (index === entries.length - 1) return [action, 0] as [Action, number];
+    return [action, weight / total] as [Action, number];
+  });
+
+  const used = normalized.slice(0, -1).reduce((sum, [, probability]) => sum + probability, 0);
+  normalized[normalized.length - 1]![1] = Math.max(0, 1 - used);
+
+  return Object.fromEntries(normalized) as Record<Action, number>;
 }
 
 export function chooseMixedAction<Action extends string>(
