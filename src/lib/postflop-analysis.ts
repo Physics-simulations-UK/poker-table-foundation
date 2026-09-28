@@ -14,10 +14,16 @@ export interface PostflopAnalysis {
   handValue: HandValue;
   pairClass: PairClass;
   flushDraw: boolean;
+  /** True only when at least one hole card participates in the four-card flush draw. */
+  holeCardFlushDraw: boolean;
+  backdoorFlushDraw: boolean;
   straightDraw: StraightDraw;
-  /** Number of distinct rank values that complete a straight on the next card. */
   straightOutRanks: number[];
-  /** True when at least one hole card is used by the evaluator's best five. */
+  /** True only when a hole card participates in at least one one-card straight completion. */
+  holeCardStraightDraw: boolean;
+  backdoorStraightDraw: boolean;
+  /** Hole cards strictly above the highest visible board rank. */
+  overcards: number;
   usesHoleCard: boolean;
 }
 
@@ -27,7 +33,7 @@ function cardKey(card: Card) {
 
 function distinctValues(cards: Card[]): number[] {
   const values = [...new Set(cards.map((card) => rankValue[card.rank]))];
-  if (values.includes(14)) values.push(1); // ace can be low
+  if (values.includes(14)) values.push(1);
   return values;
 }
 
@@ -55,6 +61,41 @@ function hasFlushDraw(cards: Card[]): boolean {
   return [...counts.values()].some((count) => count === 4);
 }
 
+function holeParticipatesInFlushDraw(hole: [Card, Card], all: Card[]): boolean {
+  const counts = new Map<Suit, number>();
+  for (const card of all) counts.set(card.suit, (counts.get(card.suit) ?? 0) + 1);
+  return hole.some((card) => counts.get(card.suit) === 4);
+}
+
+function hasBackdoorFlushDraw(hole: [Card, Card], board: Card[]): boolean {
+  if (board.length !== 3) return false;
+  const all = [...hole, ...board];
+  const counts = new Map<Suit, number>();
+  for (const card of all) counts.set(card.suit, (counts.get(card.suit) ?? 0) + 1);
+  return hole.some((card) => counts.get(card.suit) === 3);
+}
+
+function holeParticipatesInStraightDraw(hole: [Card, Card], board: Card[]): boolean {
+  const fullOuts = straightCompletionRanks([...hole, ...board]);
+  if (fullOuts.length === 0) return false;
+  return hole.some((_, index) => {
+    const otherHole = hole[1 - index]!;
+    const without = [otherHole, ...board];
+    const withoutOuts = straightCompletionRanks(without);
+    return fullOuts.some((out) => !withoutOuts.includes(out));
+  });
+}
+
+function hasBackdoorStraightDraw(hole: [Card, Card], board: Card[]): boolean {
+  if (board.length !== 3) return false;
+  const have = new Set(distinctValues([...hole, ...board]));
+  for (let high = 5; high <= 14; high++) {
+    const run = high === 5 ? [5, 4, 3, 2, 1] : [high, high - 1, high - 2, high - 3, high - 4];
+    if (run.filter((v) => have.has(v)).length >= 3) return true;
+  }
+  return false;
+}
+
 function classifyPair(hole: [Card, Card], board: Card[], madeHand: HandCategory): PairClass {
   if (madeHand !== "pair") return null;
   const boardValues = [...new Set(board.map((card) => rankValue[card.rank]))].sort((a, b) => b - a);
@@ -73,10 +114,6 @@ function classifyPair(hole: [Card, Card], board: Card[], madeHand: HandCategory)
   return best === (boardValues[0] ?? 0) ? "top-pair" : "middle-or-lower-pair";
 }
 
-/**
- * Analyse the hero/bot's current postflop hand using only visible cards.
- * Board must contain the currently revealed 3-5 community cards.
- */
 export function analyzePostflop(hole: [Card, Card], board: Card[]): PostflopAnalysis {
   if (board.length < 3 || board.length > 5) throw new Error("Postflop analysis requires 3 to 5 board cards");
   const all = [...hole, ...board];
@@ -84,14 +121,23 @@ export function analyzePostflop(hole: [Card, Card], board: Card[]): PostflopAnal
   const straight = classifyStraightDraw(all);
   const bestKeys = new Set(handValue.cards.map(cardKey));
   const usesHoleCard = hole.some((card) => bestKeys.has(cardKey(card)));
+  const madeFlush = handValue.category === "flush" || handValue.category === "straight-flush";
+  const madeStraight = handValue.category === "straight" || handValue.category === "straight-flush";
+  const flushDraw = !madeFlush && hasFlushDraw(all);
+  const highestBoard = Math.max(...board.map((card) => rankValue[card.rank]));
 
   return {
     madeHand: handValue.category,
     handValue,
     pairClass: classifyPair(hole, board, handValue.category),
-    flushDraw: handValue.category === "flush" || handValue.category === "straight-flush" ? false : hasFlushDraw(all),
-    straightDraw: handValue.category === "straight" || handValue.category === "straight-flush" ? null : straight.draw,
-    straightOutRanks: handValue.category === "straight" || handValue.category === "straight-flush" ? [] : straight.outs,
+    flushDraw,
+    holeCardFlushDraw: flushDraw && holeParticipatesInFlushDraw(hole, all),
+    backdoorFlushDraw: !madeFlush && !flushDraw && hasBackdoorFlushDraw(hole, board),
+    straightDraw: madeStraight ? null : straight.draw,
+    straightOutRanks: madeStraight ? [] : straight.outs,
+    holeCardStraightDraw: !madeStraight && straight.draw !== null && holeParticipatesInStraightDraw(hole, board),
+    backdoorStraightDraw: !madeStraight && straight.draw === null && hasBackdoorStraightDraw(hole, board),
+    overcards: hole.filter((card) => rankValue[card.rank] > highestBoard).length,
     usesHoleCard,
   };
 }
