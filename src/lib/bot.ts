@@ -1,5 +1,6 @@
 import { BIG_BLIND, getLegalActions, type BetAction } from "@/lib/betting";
 import type { Card, GameState, Position, Rank } from "@/lib/poker";
+import { actionVersusOpen, shouldOpenRaise } from "@/lib/preflop-strategy";
 
 const rankValue: Record<Rank, number> = { A: 14, K: 13, Q: 12, J: 11, "10": 10, "9": 9, "8": 8, "7": 7, "6": 6, "5": 5, "4": 4, "3": 3, "2": 2 };
 const chenPoints = (v: number) => (v === 14 ? 10 : v === 13 ? 8 : v === 12 ? 7 : v === 11 ? 6 : v / 2);
@@ -111,45 +112,36 @@ export function decideBotAction(game: GameState): BetAction {
     return shouldCallPreflopAllIn(game, score, toCall) ? call : passive;
   }
 
-  // Unraised pot (only blinds so far).
-  if (game.currentBet <= BIG_BLIND) {
-    if (score >= 9) return raiseTo(BIG_BLIND * 3);
-    if (score >= 7) return raiseTo(BIG_BLIND * 2.5);
-    if (score >= 6 && player.position === "SB") return call;
-    return passive;
-  }
-  // Facing a normal single raise. Defend wider in position and from the
-  // blinds so ordinary 6-max hands do not collapse to heads-up too often.
-  if (game.currentBet < BIG_BLIND * 8) {
-    const callBB = toCall / BIG_BLIND;
-    const pair = isPair(player.cards);
-    const hi = highRank(player.cards);
-    const lo = lowRank(player.cards);
-    const suited = player.cards[0].suit === player.cards[1].suit;
-    const lateOrBlind = ["CO", "BTN", "SB", "BB"].includes(player.position);
-
-    // Keep premium hands aggressive.
-    if (score >= 12) return raiseTo(game.currentBet * 3);
-
-    // Strong broadways and medium pairs continue from every position.
-    if (pair && hi >= 7 && callBB <= 4) return call; // 77+
-    if (hi === 14 && lo >= 10 && callBB <= 4) return call; // AT+
-    if (hi === 13 && lo >= 11 && callBB <= 4) return call; // KJ+
-
-    // Later positions and blinds defend useful suited/connective hands wider.
-    if (lateOrBlind && callBB <= 3.5) {
-      if (pair && hi >= 4) return call; // 44+
-      if (suited && hi === 14 && lo >= 7) return call; // A7s+
-      if (suited && hi === 13 && lo >= 9) return call; // K9s+
-      if (suited && hi === 12 && lo >= 9) return call; // Q9s+
-      if (suited && hi === 11 && lo >= 9) return call; // J9s+
-      if (suited && hi <= 10 && hi - lo <= 2 && lo >= 6) return call; // suited connectors/gappers
-      if (score >= 6.5) return call;
+  // v0.4 positional intelligence is deliberately preflop-only. Postflop keeps
+  // the existing deterministic fallback until a board-aware strategy arrives.
+  if (game.street === "preflop") {
+    // Unopened pot (only the blinds have been posted).
+    if (game.currentBet <= BIG_BLIND) {
+      if (shouldOpenRaise(player.cards, player.position)) return raiseTo(BIG_BLIND * 2.5);
+      // SB can complete some hands that are not strong enough for our RFI raise.
+      if (player.position === "SB" && score >= 6) return call;
+      return passive;
     }
 
-    // HJ/UTG remain tighter, but not as excessively tight as the first model.
-    if (score >= 7.5 && callBB <= 3.5) return call;
-    return passive;
+    // Identify a single ordinary opener from the live street state. A player
+    // whose street bet equals currentBet and whose last action was a raise is
+    // the opener. If the state is more complex, fall through to the legacy
+    // conservative 3-bet+ handling below.
+    const raisers = game.players.filter(
+      (opponent, seat) =>
+        seat !== game.actor &&
+        !opponent.folded &&
+        opponent.streetBet === game.currentBet &&
+        opponent.lastAction?.startsWith("RAISE TO"),
+    );
+
+    if (game.currentBet < BIG_BLIND * 8 && raisers.length === 1) {
+      const opener = raisers[0]!;
+      const intention = actionVersusOpen(player.cards, player.position, opener.position);
+      if (intention === "3bet") return raiseTo(game.currentBet * 3);
+      if (intention === "call") return call;
+      return passive;
+    }
   }
   // Facing a 3-bet or more.
   if (score >= 14 && game.currentBet < BIG_BLIND * 25) return raiseTo(game.currentBet * 2.5);
