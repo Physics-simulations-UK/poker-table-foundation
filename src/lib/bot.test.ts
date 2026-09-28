@@ -66,6 +66,7 @@ function facingDeepShove(cards: [Card, Card]): GameState {
     actor: 1,
     winner: null,
     message: null,
+    actionHistory: [],
   };
 }
 
@@ -227,6 +228,7 @@ function postflopGame(
     actor: 1,
     winner: null,
     message: null,
+    actionHistory: [],
   };
 }
 
