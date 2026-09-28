@@ -74,4 +74,27 @@ describe("mixed postflop strategy", () => {
     const expensive = normalizeStrategy(mixedPostflopStrategy(hand, ctx({ toCall: 60, potOdds: 0.38 })));
     expect(cheap.call).toBeGreaterThan(expensive.call);
   });
+
+  it("keeps strong made hands from becoming automatic raises", () => {
+    const hand = analyzePostflop(hole("6s 6d"), cards("Ah 6c 3s"));
+    const strategy = normalizeStrategy(mixedPostflopStrategy(hand, ctx({ toCall: 30, potOdds: 0.23 })));
+    expect(strategy.call).toBeGreaterThan(0.4);
+    expect(strategy.raise).toBeGreaterThan(0.4);
+    expect(strategy.raise).toBeLessThan(0.6);
+  });
+
+  it("checks strong made hands often enough to protect the checking range", () => {
+    const hand = analyzePostflop(hole("6s 6d"), cards("Ah 6c 3s"));
+    const strategy = normalizeStrategy(mixedPostflopStrategy(hand, ctx()));
+    expect(strategy.check).toBeGreaterThan(0.25);
+  });
+
+  it("lets combo draws raise at least as often as ordinary strong made hands", () => {
+    const value = analyzePostflop(hole("6s 6d"), cards("Ah 6c 3s"));
+    const draw = analyzePostflop(hole("9s 8s"), cards("7s 6h 2s"));
+    const situation = ctx({ toCall: 30, potOdds: 0.23 });
+    const valueStrategy = normalizeStrategy(mixedPostflopStrategy(value, situation));
+    const drawStrategy = normalizeStrategy(mixedPostflopStrategy(draw, situation));
+    expect(drawStrategy.raise).toBeGreaterThanOrEqual(valueStrategy.raise);
+  });
 });
