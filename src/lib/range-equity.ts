@@ -100,3 +100,54 @@ export function turnEquityAgainstRange(
     combinations,
   };
 }
+
+
+/**
+ * Exact flop equity against a weighted opponent range.
+ * Enumerates every unordered legal turn/river pair for each opponent holding.
+ */
+export function flopEquityAgainstRange(
+  hero:[Card,Card],
+  board:Card[],
+  range:WeightedCombo[],
+):EquityResult {
+  if(board.length!==3) throw new Error("Flop equity requires exactly three board cards");
+
+  const known=new Set([...hero,...board].map(key));
+  let winWeight=0,tieWeight=0,lossWeight=0,combinations=0;
+
+  for(const combo of range){
+    if(combo.weight<=0) continue;
+    if(combo.cards.some(c=>known.has(key(c)))) continue;
+
+    const comboDead=new Set([...known,...combo.cards.map(key)]);
+    const runoutDeck=fullDeck().filter(c=>!comboDead.has(key(c)));
+    const runoutCount=runoutDeck.length*(runoutDeck.length-1)/2;
+
+    for(let i=0;i<runoutDeck.length;i++){
+      for(let j=i+1;j<runoutDeck.length;j++){
+        const finalBoard=[...board,runoutDeck[i]!,runoutDeck[j]!];
+        const heroValue=evaluateHand([...hero,...finalBoard]);
+        const opponentValue=evaluateHand([...combo.cards,...finalBoard]);
+        const comparison=compareHandValues(heroValue,opponentValue);
+        const weight=combo.weight/runoutCount;
+        if(comparison>0) winWeight+=weight;
+        else if(comparison<0) lossWeight+=weight;
+        else tieWeight+=weight;
+        combinations++;
+      }
+    }
+  }
+
+  const totalWeight=winWeight+tieWeight+lossWeight;
+  if(!(totalWeight>0)) throw new Error("No possible opponent combinations remain");
+
+  return {
+    equity:(winWeight+tieWeight*0.5)/totalWeight,
+    win:winWeight/totalWeight,
+    tie:tieWeight/totalWeight,
+    loss:lossWeight/totalWeight,
+    totalWeight,
+    combinations,
+  };
+}
