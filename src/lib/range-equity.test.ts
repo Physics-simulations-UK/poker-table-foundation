@@ -94,7 +94,7 @@ describe("flop full-range performance",()=>{
     expect(result.equity).toBeLessThanOrEqual(1);
     expect(result.win+result.tie+result.loss).toBeCloseTo(1,10);
     expect(result.combinations).toBeGreaterThan(1_000_000);
-    console.info(\`exact flop full-range equity: \${elapsed.toFixed(0)} ms for \${result.combinations} runouts\`);
+    console.info("exact flop full-range equity: "+elapsed.toFixed(0)+" ms for "+result.combinations+" runouts");
   },30000);
 });
 
