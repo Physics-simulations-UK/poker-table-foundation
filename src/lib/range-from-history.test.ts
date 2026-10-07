@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { rangeFromActionHistory, riverEquityFromHistory } from "@/lib/range-from-history";
+import { rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
 import { comboQuality } from "@/lib/opponent-range";
 import { createHand, type GameState, type HandAction } from "@/lib/poker";
 
@@ -46,5 +46,38 @@ describe("range reconstruction from hand history",()=>{
     const p=riverEquityFromHistory(passive,0,1).equity;
     const a=riverEquityFromHistory(aggressive,0,1).equity;
     expect(p).not.toBeCloseTo(a,6);
+  });
+});
+
+
+describe("turn equity from hand history",()=>{
+  it("reconstructs the range through the turn and returns valid exact equity",()=>{
+    const game=createHand(0,1);
+    const turn:GameState={...game,revealedCount:4,street:"turn",actionHistory:[
+      action({type:"raise",amount:25,to:25}),
+      action({street:"flop",type:"call",amount:30,to:30,potBefore:60}),
+      action({street:"turn",type:"raise",amount:70,to:70,potBefore:120}),
+    ]};
+    const result=turnEquityFromHistory(turn,0,1);
+    expect(result.equity).toBeGreaterThanOrEqual(0);
+    expect(result.equity).toBeLessThanOrEqual(1);
+    expect(result.win+result.tie+result.loss).toBeCloseTo(1,10);
+    expect(result.combinations).toBeGreaterThan(0);
+  });
+
+  it("changes turn equity when the opponent line represents a different range",()=>{
+    const game=createHand(0,1);
+    const passive:GameState={...game,revealedCount:4,street:"turn",actionHistory:[
+      action({type:"call"}),
+      action({street:"flop",type:"check",amount:0,to:0,potBefore:60}),
+      action({street:"turn",type:"call",amount:25,to:25,potBefore:80}),
+    ]};
+    const aggressive:GameState={...passive,actionHistory:[
+      action({type:"raise",amount:25,to:25}),
+      action({street:"flop",type:"raise",amount:50,to:50,potBefore:60}),
+      action({street:"turn",type:"raise",amount:100,to:100,potBefore:160}),
+    ]};
+    expect(turnEquityFromHistory(passive,0,1).equity)
+      .not.toBeCloseTo(turnEquityFromHistory(aggressive,0,1).equity,6);
   });
 });
