@@ -1,5 +1,5 @@
 import { compareHandValues, evaluateHand } from "@/lib/hand-evaluator";
-import type { WeightedCombo } from "@/lib/opponent-range";
+import { fullDeck, type WeightedCombo } from "@/lib/opponent-range";
 import type { Card } from "@/lib/poker";
 
 export interface EquityResult {
@@ -38,6 +38,54 @@ export function riverEquityAgainstRange(
     else if(comparison<0) lossWeight+=combo.weight;
     else tieWeight+=combo.weight;
     combinations++;
+  }
+
+  const totalWeight=winWeight+tieWeight+lossWeight;
+  if(!(totalWeight>0)) throw new Error("No possible opponent combinations remain");
+
+  return {
+    equity:(winWeight+tieWeight*0.5)/totalWeight,
+    win:winWeight/totalWeight,
+    tie:tieWeight/totalWeight,
+    loss:lossWeight/totalWeight,
+    totalWeight,
+    combinations,
+  };
+}
+
+
+/**
+ * Exact turn equity against a weighted opponent range.
+ * Enumerates every legal river card for every possible opponent holding.
+ */
+export function turnEquityAgainstRange(
+  hero:[Card,Card],
+  board:Card[],
+  range:WeightedCombo[],
+):EquityResult {
+  if(board.length!==4) throw new Error("Turn equity requires exactly four board cards");
+
+  const known=new Set([...hero,...board].map(key));
+  let winWeight=0,tieWeight=0,lossWeight=0,combinations=0;
+
+  for(const combo of range){
+    if(combo.weight<=0) continue;
+    if(combo.cards.some(c=>known.has(key(c)))) continue;
+
+    const comboDead=new Set([...known,...combo.cards.map(key)]);
+    const rivers=fullDeck().filter(c=>!comboDead.has(key(c)));
+    for(const river of rivers){
+      const finalBoard=[...board,river];
+      const heroValue=evaluateHand([...hero,...finalBoard]);
+      const opponentValue=evaluateHand([...combo.cards,...finalBoard]);
+      const comparison=compareHandValues(heroValue,opponentValue);
+      // Each river is equally likely conditional on this opponent combo.
+      const weight=combo.weight/rivers.length;
+      if(comparison>0) winWeight+=weight;
+      else if(comparison<0) lossWeight+=weight;
+      else tieWeight+=weight;
+      combinations++;
+    }
   }
 
   const totalWeight=winWeight+tieWeight+lossWeight;
