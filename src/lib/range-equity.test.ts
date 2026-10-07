@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { riverEquityAgainstRange, turnEquityAgainstRange } from "@/lib/range-equity";
+import { flopEquityAgainstRange, riverEquityAgainstRange, turnEquityAgainstRange } from "@/lib/range-equity";
 import { availableCombos, opponentRange } from "@/lib/opponent-range";
 import type { Card } from "@/lib/poker";
 const c=(rank:Card["rank"],suit:Card["suit"]):Card=>({rank,suit});
@@ -76,6 +76,37 @@ describe("turn range equity",()=>{
     const board=[c("K","spades"),c("7","spades"),c("2","diamonds"),c("4","clubs")];
     const villain:[Card,Card]=h(c("K","hearts"),c("J","hearts"));
     const result=turnEquityAgainstRange(hero,board,[{cards:villain,weight:1}]);
+    expect(result.equity).toBeGreaterThan(0);
+    expect(result.equity).toBeLessThan(0.5);
+  });
+});
+
+
+describe("flop range equity",()=>{
+  it("enumerates every legal unordered turn/river runout for a fixed opponent hand",()=>{
+    const hero=h(c("A","spades"),c("A","hearts"));
+    const board=[c("K","clubs"),c("8","diamonds"),c("7","spades")];
+    const villain=h(c("K","hearts"),c("Q","hearts"));
+    const result=flopEquityAgainstRange(hero,board,[{cards:villain,weight:1}]);
+    // Seven known cards leave 45 unseen: C(45,2)=990 runouts.
+    expect(result.combinations).toBe(990);
+    expect(result.win+result.tie+result.loss).toBeCloseTo(1,10);
+  });
+
+  it("gives a flopped royal flush 100% equity",()=>{
+    const hero=h(c("A","spades"),c("K","spades"));
+    const board=[c("Q","spades"),c("J","spades"),c("10","spades")];
+    const villain=h(c("9","hearts"),c("9","clubs"));
+    const result=flopEquityAgainstRange(hero,board,[{cards:villain,weight:1}]);
+    expect(result.equity).toBe(1);
+    expect(result.loss).toBe(0);
+  });
+
+  it("includes two-card future improvement from the flop",()=>{
+    const hero=h(c("A","spades"),c("Q","spades"));
+    const board=[c("K","spades"),c("7","spades"),c("2","diamonds")];
+    const villain=h(c("K","hearts"),c("J","hearts"));
+    const result=flopEquityAgainstRange(hero,board,[{cards:villain,weight:1}]);
     expect(result.equity).toBeGreaterThan(0);
     expect(result.equity).toBeLessThan(0.5);
   });
