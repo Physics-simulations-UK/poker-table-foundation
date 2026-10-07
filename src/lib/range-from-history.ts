@@ -1,6 +1,6 @@
 import { normalizedRange, opponentRange, type RangeAction, type WeightedCombo } from "@/lib/opponent-range";
 import { reweightRangeForPostflopAction, type BetSizeClass, type ObservedPostflopAction } from "@/lib/postflop-range";
-import { riverEquityAgainstRange, type EquityResult } from "@/lib/range-equity";
+import { riverEquityAgainstRange, turnEquityAgainstRange, type EquityResult } from "@/lib/range-equity";
 import type { Card, GameState, HandAction, Street } from "@/lib/poker";
 
 function preflopActions(actions:HandAction[]):RangeAction[] {
@@ -53,4 +53,15 @@ export function riverEquityFromHistory(game:GameState,heroSeat:number,opponentSe
   const board=game.communityCards.slice(0,5);
   const range=rangeFromActionHistory(game,opponentSeat,[...hero.cards,...board]);
   return riverEquityAgainstRange(hero.cards,board,range);
+}
+
+
+/** Exact turn equity using an opponent range reconstructed through the turn. */
+export function turnEquityFromHistory(game:GameState,heroSeat:number,opponentSeat:number):EquityResult {
+  if(game.revealedCount!==4) throw new Error("Turn history equity requires exactly four board cards");
+  const hero=game.players[heroSeat];
+  if(!hero) throw new Error("Unknown hero seat");
+  const board=game.communityCards.slice(0,4);
+  const range=rangeFromActionHistory(game,opponentSeat,[...hero.cards,...board]);
+  return turnEquityAgainstRange(hero.cards,board,range);
 }
