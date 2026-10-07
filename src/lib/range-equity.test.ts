@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { riverEquityAgainstRange } from "@/lib/range-equity";
+import { riverEquityAgainstRange, turnEquityAgainstRange } from "@/lib/range-equity";
 import { availableCombos, opponentRange } from "@/lib/opponent-range";
 import type { Card } from "@/lib/poker";
 const c=(rank:Card["rank"],suit:Card["suit"]):Card=>({rank,suit});
@@ -48,5 +48,35 @@ describe("river range equity",()=>{
     expect(result.win+result.tie+result.loss).toBeCloseTo(1,10);
     expect(result.equity).toBeGreaterThanOrEqual(0);
     expect(result.equity).toBeLessThanOrEqual(1);
+  });
+});
+
+
+describe("turn range equity",()=>{
+  it("enumerates every legal river for every possible opponent combo",()=>{
+    const hero=h(c("A","spades"),c("A","hearts"));
+    const board=[c("K","clubs"),c("8","diamonds"),c("7","spades"),c("4","hearts")];
+    const range=availableCombos([...hero,...board]);
+    const result=turnEquityAgainstRange(hero,board,range);
+    // 46 unseen cards -> C(46,2)=1035 opponent combos, then 44 legal rivers.
+    expect(result.combinations).toBe(1035*44);
+    expect(result.win+result.tie+result.loss).toBeCloseTo(1,10);
+  });
+
+  it("gives a made royal flush 100% turn equity",()=>{
+    const hero=h(c("A","spades"),c("K","spades"));
+    const board=[c("Q","spades"),c("J","spades"),c("10","spades"),c("2","clubs")];
+    const result=turnEquityAgainstRange(hero,board,availableCombos([...hero,...board]));
+    expect(result.equity).toBe(1);
+    expect(result.loss).toBe(0);
+  });
+
+  it("includes river improvement rather than judging only current hand strength",()=>{
+    const hero=h(c("A","spades"),c("Q","spades"));
+    const board=[c("K","spades"),c("7","spades"),c("2","diamonds"),c("4","clubs")];
+    const villain:[Card,Card]=h(c("K","hearts"),c("J","hearts"));
+    const result=turnEquityAgainstRange(hero,board,[{cards:villain,weight:1}]);
+    expect(result.equity).toBeGreaterThan(0);
+    expect(result.equity).toBeLessThan(0.5);
   });
 });
