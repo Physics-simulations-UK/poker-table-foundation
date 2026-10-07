@@ -7,7 +7,7 @@ import { analyzePostflop } from "@/lib/postflop-analysis";
 import { analyzePostflopContext } from "@/lib/postflop-context";
 import { mixedPostflopStrategy } from "@/lib/postflop-mixed-strategy";
 import { postflopBetSizeStrategy, potFractionForSize } from "@/lib/postflop-bet-sizing";
-import { riverEquityFromHistory } from "@/lib/range-from-history";
+import { riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
 import { equityAdjustedRiverStrategy } from "@/lib/river-equity-strategy";
 
 const rankValue: Record<Rank, number> = { A: 14, K: 13, Q: 12, J: 11, "10": 10, "9": 9, "8": 8, "7": 7, "6": 6, "5": 5, "4": 4, "3": 3, "2": 2 };
@@ -201,12 +201,12 @@ export function decideBotAction(game: GameState, strategyRoll?: number, sizingRo
     // strategy using exact equity versus the opponent's range reconstructed
     // from the complete observed hand history. Other postflop spots are
     // intentionally unchanged.
-    if (game.street === "river" && context.toCall > 0 && context.activeOpponents === 1) {
+    if ((game.street === "turn" || game.street === "river") && context.toCall > 0 && context.activeOpponents === 1) {
       const opponentSeat = game.players.findIndex(
         (opponent, seat) => seat !== game.actor && !opponent.folded,
       );
       if (opponentSeat >= 0) {
-        const equity = riverEquityFromHistory(game, game.actor!, opponentSeat).equity;
+        const equity = game.street === "river" ? riverEquityFromHistory(game, game.actor!, opponentSeat).equity : turnEquityFromHistory(game, game.actor!, opponentSeat).equity;
         strategy = equityAdjustedRiverStrategy(
           {
             fold: baselineStrategy.fold ?? 0,
