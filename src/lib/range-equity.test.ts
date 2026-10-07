@@ -82,6 +82,22 @@ describe("turn range equity",()=>{
 });
 
 
+describe("flop full-range performance",()=>{
+  it("calculates exact equity against a realistic weighted preflop range",()=>{
+    const hero=h(c("A","clubs"),c("Q","clubs"));
+    const board=[c("Q","diamonds"),c("9","spades"),c("7","hearts")];
+    const range=opponentRange([...hero,...board],"BTN",["raise","call"]);
+    const started=performance.now();
+    const result=flopEquityAgainstRange(hero,board,range);
+    const elapsed=performance.now()-started;
+    expect(result.equity).toBeGreaterThanOrEqual(0);
+    expect(result.equity).toBeLessThanOrEqual(1);
+    expect(result.win+result.tie+result.loss).toBeCloseTo(1,10);
+    expect(result.combinations).toBeGreaterThan(1_000_000);
+    console.info(\`exact flop full-range equity: \${elapsed.toFixed(0)} ms for \${result.combinations} runouts\`);
+  },30000);
+});
+
 describe("flop range equity",()=>{
   it("enumerates every legal unordered turn/river runout for a fixed opponent hand",()=>{
     const hero=h(c("A","spades"),c("A","hearts"));
