@@ -171,7 +171,9 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
                     <div><strong>Your hand:</strong> {explanation.handExplanation}</div>
                     <div><strong>What to watch:</strong> {explanation.boardExplanation}</div>
                     <div><strong>Your decision:</strong> {explanation.potOddsPercent === null ? "There was no bet to call." : "Calling required approximately " + explanation.potOddsPercent + "% equity to break even based on immediate pot odds."}</div>
-                    <div style={{ opacity: 0.75, fontSize: 12 }}>{explanation.note}</div>
+                    <div style={{ marginTop: 8 }}><strong>Coach's suggested play:</strong> {explanation.recommendedAction === "uncertain" ? "No confident recommendation" : explanation.recommendedAction.toUpperCase()}</div>
+                    <div><strong>Why:</strong> {explanation.recommendationReason}</div>
+                    <div style={{ opacity: 0.75, fontSize: 12 }}>Rule-based guidance, not a GTO solver result. {explanation.note}</div>
                   </div>;
                 })()}
               </div>
