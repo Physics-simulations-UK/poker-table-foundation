@@ -168,9 +168,9 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
                   const explanation = explainFlopDecision(decision);
                   if (!explanation) return null;
                   return <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #3d5947" }}>
-                    <div><strong>Flop analysis:</strong> {explanation.handStrength}</div>
-                    <div>Board: {explanation.boardTexture}</div>
-                    <div>{explanation.potOddsPercent === null ? "No call required" : "Equity needed to call: " + explanation.potOddsPercent + "%"}</div>
+                    <div><strong>Your hand:</strong> {explanation.handExplanation}</div>
+                    <div><strong>What to watch:</strong> {explanation.boardExplanation}</div>
+                    <div><strong>Your decision:</strong> {explanation.potOddsPercent === null ? "There was no bet to call." : "Calling required approximately " + explanation.potOddsPercent + "% equity to break even based on immediate pot odds."}</div>
                     <div style={{ opacity: 0.75, fontSize: 12 }}>{explanation.note}</div>
                   </div>;
                 })()}
