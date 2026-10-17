@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeStrategy } from "@/lib/mixed-strategy";
 import { analyzePostflop } from "@/lib/postflop-analysis";
-import { mixedPostflopStrategy, multiwayRiverAdjustment } from "@/lib/postflop-mixed-strategy";
+import { mixedPostflopStrategy, multiwayRiverAdjustment, riverHighCardDiscipline } from "@/lib/postflop-mixed-strategy";
 import type { PostflopContext } from "@/lib/postflop-context";
 import type { Card, Rank, Suit } from "@/lib/poker";
 
@@ -128,5 +128,24 @@ describe("river multiway aggression discipline",()=>{
     const baseline=normalizeStrategy(mixedPostflopStrategy(hand,situation));
     const adjusted=normalizeStrategy(multiwayRiverAdjustment(baseline,hand,situation));
     expect(adjusted.check).toBeGreaterThan(baseline.check);
+  });
+});
+
+describe("river high-card bluff-catching discipline",()=>{
+  it("limits weak high-card calls even against cheap bets",()=>{
+    const hand=analyzePostflop(hole("As Qd"),cards("Kh 8c 3s 6d 2h"));
+    const strategy=riverHighCardDiscipline({fold:0.20,call:0.75,raise:0.05},hand,ctx({toCall:10,potOdds:0.09}));
+    expect(strategy.call).toBeLessThanOrEqual(0.18);
+    expect(strategy.fold).toBeGreaterThan(0.79);
+  });
+  it("is tighter against multiple opponents",()=>{
+    const hand=analyzePostflop(hole("As Qd"),cards("Kh 8c 3s 6d 2h"));
+    const strategy=riverHighCardDiscipline({fold:0.20,call:0.75,raise:0.05},hand,ctx({activeOpponents:3,toCall:10,potOdds:0.09}));
+    expect(strategy.call).toBeLessThanOrEqual(0.05);
+  });
+  it("leaves genuine made pairs unchanged",()=>{
+    const hand=analyzePostflop(hole("Ks Qd"),cards("Kh 8c 3s 6d 2h"));
+    const baseline={fold:0.1,call:0.8,raise:0.1};
+    expect(riverHighCardDiscipline(baseline,hand,ctx({toCall:10,potOdds:0.09}))).toEqual(baseline);
   });
 });
