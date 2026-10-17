@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { preflopActionsForSeat, flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
+import { postflopActionSizeClass, preflopActionsForSeat, flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
 import { comboQuality } from "@/lib/opponent-range";
 import { createHand, type GameState, type HandAction } from "@/lib/poker";
 
@@ -121,5 +121,31 @@ describe("table-wide preflop raise classification",()=>{
       action({seat:1,type:"raise",amount:90,to:90}),
     ];
     expect(preflopActionsForSeat(history,1)).toEqual(["call","three-bet"]);
+  });
+});
+
+describe("pot-relative postflop sizing",()=>{
+  it("classifies small, medium and large opening bets",()=>{
+    for(const [amount,expected] of [[25,"small"],[65,"medium"],[125,"large"]] as const){
+      const history=[action({street:"flop",type:"raise",amount,to:amount,potBefore:100})];
+      expect(postflopActionSizeClass(history,0)).toBe(expected);
+    }
+  });
+  it("measures the raise increment beyond a call rather than the whole raise",()=>{
+    const history=[
+      action({seat:0,street:"flop",type:"raise",amount:30,to:30,potBefore:100}),
+      action({seat:1,street:"flop",type:"raise",amount:75,to:75,potBefore:130}),
+    ];
+    // Calling costs 30; additional raise is 45 into a pot of 160.
+    expect(postflopActionSizeClass(history,1)).toBe("small");
+  });
+  it("accounts for prior street commitment when a player raises again",()=>{
+    const history=[
+      action({seat:1,street:"turn",type:"raise",amount:30,to:30,potBefore:100}),
+      action({seat:0,street:"turn",type:"raise",amount:90,to:90,potBefore:130}),
+      action({seat:1,street:"turn",type:"raise",amount:110,to:140,potBefore:220}),
+    ];
+    // 60 to call; 50 additional, relative to 280 after calling.
+    expect(postflopActionSizeClass(history,2)).toBe("small");
   });
 });
