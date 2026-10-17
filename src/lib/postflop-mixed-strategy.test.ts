@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeStrategy } from "@/lib/mixed-strategy";
 import { analyzePostflop } from "@/lib/postflop-analysis";
-import { mixedPostflopStrategy } from "@/lib/postflop-mixed-strategy";
+import { mixedPostflopStrategy, multiwayRiverAdjustment } from "@/lib/postflop-mixed-strategy";
 import type { PostflopContext } from "@/lib/postflop-context";
 import type { Card, Rank, Suit } from "@/lib/poker";
 
@@ -96,5 +96,37 @@ describe("mixed postflop strategy", () => {
     const valueStrategy = normalizeStrategy(mixedPostflopStrategy(value, situation));
     const drawStrategy = normalizeStrategy(mixedPostflopStrategy(draw, situation));
     expect(drawStrategy.raise).toBeGreaterThanOrEqual(valueStrategy.raise);
+  });
+});
+
+describe("river multiway aggression discipline",()=>{
+  it("reduces two-pair raises against multiple opponents",()=>{
+    const hand=analyzePostflop(hole("Kh 9d"),cards("Ks 9c 7h 4d 2c"));
+    const situation=ctx({activeOpponents:3,toCall:40,potOdds:0.25});
+    const baseline=normalizeStrategy(mixedPostflopStrategy(hand,situation));
+    const adjusted=normalizeStrategy(multiwayRiverAdjustment(baseline,hand,situation));
+    expect(adjusted.raise).toBeLessThan(baseline.raise);
+    expect(adjusted.call).toBeGreaterThan(baseline.call);
+  });
+  it("retains substantial value aggression with a set",()=>{
+    const hand=analyzePostflop(hole("6s 6d"),cards("Ah 6c 3s 9d 2h"));
+    const situation=ctx({activeOpponents:2,toCall:30,potOdds:0.2});
+    const baseline=normalizeStrategy(mixedPostflopStrategy(hand,situation));
+    const adjusted=normalizeStrategy(multiwayRiverAdjustment(baseline,hand,situation));
+    expect(adjusted.raise).toBeGreaterThan(0.3);
+    expect(adjusted.raise).toBeLessThan(baseline.raise);
+  });
+  it("preserves heads-up decisions",()=>{
+    const hand=analyzePostflop(hole("Kh 9d"),cards("Ks 9c 7h 4d 2c"));
+    const situation=ctx({activeOpponents:1,toCall:40,potOdds:0.25});
+    const baseline=mixedPostflopStrategy(hand,situation);
+    expect(multiwayRiverAdjustment(baseline,hand,situation)).toEqual(baseline);
+  });
+  it("checks more frequently rather than bluff-betting multiway",()=>{
+    const hand=analyzePostflop(hole("As Qd"),cards("Kh 8c 3s 6d 2h"));
+    const situation=ctx({activeOpponents:3});
+    const baseline=normalizeStrategy(mixedPostflopStrategy(hand,situation));
+    const adjusted=normalizeStrategy(multiwayRiverAdjustment(baseline,hand,situation));
+    expect(adjusted.check).toBeGreaterThan(baseline.check);
   });
 });
