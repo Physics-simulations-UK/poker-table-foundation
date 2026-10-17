@@ -5,7 +5,7 @@ import { mixedFirstInStrategy, mixedVersusOpenAndCallersStrategy, mixedVersusOpe
 import { chooseMixedAction } from "@/lib/mixed-strategy";
 import { analyzePostflop } from "@/lib/postflop-analysis";
 import { analyzePostflopContext } from "@/lib/postflop-context";
-import { mixedPostflopStrategy } from "@/lib/postflop-mixed-strategy";
+import { mixedPostflopStrategy, multiwayRiverAdjustment } from "@/lib/postflop-mixed-strategy";
 import { postflopBetSizeStrategy, potFractionForSize } from "@/lib/postflop-bet-sizing";
 import { flopEquityFromHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
 import { equityAdjustedRiverStrategy } from "@/lib/river-equity-strategy";
@@ -225,6 +225,9 @@ export function decideBotAction(game: GameState, strategyRoll?: number, sizingRo
       }
     }
 
+    if(game.street==="river" && context.activeOpponents>=2){
+      strategy=multiwayRiverAdjustment(strategy,hand,context);
+    }
     const intention = chooseMixedAction(strategy, strategyRoll).action;
     const pot = potTotal(game);
     const sampledBetTarget = () => {
