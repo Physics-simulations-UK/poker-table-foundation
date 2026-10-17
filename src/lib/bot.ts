@@ -160,20 +160,7 @@ export function decideBotAction(game: GameState, strategyRoll?: number, sizingRo
       const strategy = callersAtPrice.length > 0
         ? mixedVersusOpenAndCallersStrategy(player.cards, player.position, opener.position, openSizeBB)
         : mixedVersusOpenStrategy(player.cards, player.position, opener.position, openSizeBB);
-      if(game.street==="river" && context.toCall>0 && hand.madeHand==="high-card"){
-      strategy=riverHighCardDiscipline(strategy,hand,context);
-    }
-    if(game.street==="river" && context.toCall>0 && hand.madeHand==="pair"){
-      const suitCounts=(cards:Card[])=>["spades","hearts","diamonds","clubs"].map(suit=>cards.filter(card=>card.suit===suit).length);
-      const before=suitCounts(board.slice(0,4));
-      const after=suitCounts(board);
-      const flushCompletedOnRiver=after.some((count,i)=>count===3&&before[i]===2);
-      const opponentSeat=game.players.findIndex((opponent,seat)=>seat!==game.actor&&!opponent.folded&&opponent.streetBet===game.currentBet);
-      const opponentLedAllStreets=opponentSeat>=0&&(["flop","turn","river"] as const).every(street=>
-        game.actionHistory.some(action=>action.seat===opponentSeat&&action.street===street&&action.type==="raise"));
-      strategy=riverFlushCompletionDiscipline(strategy,hand,context,flushCompletedOnRiver,opponentLedAllStreets);
-    }
-    const intention = chooseMixedAction(strategy, strategyRoll).action;
+      const intention = chooseMixedAction(strategy, strategyRoll).action;
       if (intention === "raise") return raiseTo(game.currentBet * 3);
       if (intention === "call") return call;
       return passive;
@@ -240,6 +227,18 @@ export function decideBotAction(game: GameState, strategyRoll?: number, sizingRo
 
     if(game.street==="river" && context.activeOpponents>=2){
       strategy=multiwayRiverAdjustment(strategy,hand,context);
+    }
+    if (game.street === "river" && context.toCall > 0) {
+      if (hand.madeHand === "high-card") strategy = riverHighCardDiscipline(strategy, hand, context);
+      if (hand.madeHand === "pair") {
+        const suits = ["spades", "hearts", "diamonds", "clubs"];
+        const before = suits.map(suit => board.slice(0, 4).filter(card => card.suit === suit).length);
+        const flushCompleted = suits.some((suit, i) => before[i] === 2 && board.filter(card => card.suit === suit).length === 3);
+        const bettorSeat = game.players.findIndex((opponent, seat) => seat !== game.actor && !opponent.folded && opponent.streetBet === game.currentBet);
+        const tripleBarrel = bettorSeat >= 0 && (["flop", "turn", "river"] as const).every(street =>
+          game.actionHistory.some(action => action.seat === bettorSeat && action.street === street && action.type === "raise"));
+        strategy = riverFlushCompletionDiscipline(strategy, hand, context, flushCompleted, tripleBarrel);
+      }
     }
     const intention = chooseMixedAction(strategy, strategyRoll).action;
     const pot = potTotal(game);
