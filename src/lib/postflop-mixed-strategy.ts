@@ -120,3 +120,31 @@ export function mixedPostflopStrategy(
   const probe = hasPotential && !multiway ? 0.20 : 0.06;
   return weights({ check: 1 - probe, "bet-small": probe });
 }
+
+/**
+ * River-only multiway discipline. Fewer speculative bets/raises when two or
+ * more opponents remain; strong value hands still bet and raise.
+ * Heads-up and earlier streets are deliberately unchanged by the caller.
+ */
+export function multiwayRiverAdjustment(
+  baseline: StrategyDistribution<MixedPostflopAction>,
+  hand: PostflopAnalysis,
+  context: PostflopContext,
+): StrategyDistribution<MixedPostflopAction> {
+  if(context.activeOpponents<2) return baseline;
+  const monster=monsters.has(hand.madeHand);
+  const twoPair=hand.madeHand==="two-pair";
+  const strongPair=hand.madeHand==="pair"&&(hand.pairClass==="top-pair"||hand.pairClass==="overpair");
+  // Multipliers on aggression, retaining genuine value raises.
+  const factor=monster?0.85:twoPair?0.35:strongPair?0.25:0.10;
+  const adjusted={...baseline};
+  const removed=(baseline.raise??0)*(1-factor)
+    +(baseline["bet-small"]??0)*(1-factor)
+    +(baseline["bet-medium"]??0)*(1-factor);
+  for(const key of ["raise","bet-small","bet-medium"] as const){
+    if(baseline[key]!==undefined) adjusted[key]=baseline[key]! * factor;
+  }
+  if(context.toCall>0) adjusted.call=(baseline.call??0)+removed;
+  else adjusted.check=(baseline.check??0)+removed;
+  return adjusted;
+}
