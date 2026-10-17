@@ -7,6 +7,8 @@ export interface FlopDecisionExplanation {
   boardTexture: string;
   potOddsPercent: number | null;
   note: string;
+  handExplanation: string;
+  boardExplanation: string;
 }
 
 /** Descriptive flop coaching only; does not claim a play is GTO-correct. */
@@ -29,5 +31,17 @@ export function explainFlopDecision(decision: HeroDecisionSnapshot): FlopDecisio
   const note = decision.toCall > 0
     ? "This is the break-even equity threshold for a call based on immediate pot odds, not an assessment of your actual equity."
     : "No bet to call. Pot odds do not determine whether a check or bet is preferable.";
-  return { handStrength, boardTexture, potOddsPercent, note };
+  const handExplanation = hand.madeHand === "pair"
+    ? hand.pairClass === "top-pair" ? "You have top pair: one of your cards matches the highest card on the flop."
+    : hand.pairClass === "overpair" ? "Your pocket pair is higher than every card on the flop."
+    : "You have one pair. Consider how it compares with the highest card on the flop."
+    : hand.madeHand === "high-card" ? "You have not made a pair or stronger hand yet."
+    : "You have " + hand.madeHand.replaceAll("-", " ") + ".";
+  const drawExplanation = draws.length ? " You also have a " + draws.join(" and ") + "." : "";
+  const boardExplanation = board.suitTexture === "two-tone"
+    ? "Two flop cards share a suit, so a flush draw may be possible."
+    : board.suitTexture === "monotone"
+    ? "All three flop cards share a suit. Flushes and flush draws are important threats."
+    : "All three flop cards have different suits, so no immediate flush draw is possible.";
+  return { handStrength, boardTexture, potOddsPercent, note, handExplanation: handExplanation + drawExplanation, boardExplanation };
 }
