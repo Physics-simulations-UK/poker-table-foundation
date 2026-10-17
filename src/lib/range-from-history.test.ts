@@ -1,6 +1,6 @@
 import { describe,expect,it } from "vitest";
-import { postflopObservedAction, postflopActionSizeClass, preflopActionsForSeat, flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
-import { comboQuality } from "@/lib/opponent-range";
+import { hasTripleBarrel, tripleBarrelRangeAdjustment, postflopObservedAction, postflopActionSizeClass, preflopActionsForSeat, flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
+import { comboQuality, normalizedRange, opponentRange } from "@/lib/opponent-range";
 import { createHand, type GameState, type HandAction } from "@/lib/poker";
 
 const action=(overrides:Partial<HandAction>):HandAction=>({
@@ -173,5 +173,22 @@ describe("postflop action history interpretation",()=>{
       action({street:"river",seat:1,type:"raise",amount:120,to:150,potBefore:220}),
     ];
     expect(postflopObservedAction(history,2)).toBe("raise");
+  });
+});
+
+describe("three-street betting pattern",()=>{
+  const barrel=(street:HandAction["street"])=>action({street,seat:1,type:"raise",amount:40,to:40,potBefore:100});
+  it("recognises betting all three postflop streets",()=>{
+    expect(hasTripleBarrel([barrel("flop"),barrel("turn"),barrel("river")],1)).toBe(true);
+  });
+  it("does not mistake a checked turn for a triple barrel",()=>{
+    expect(hasTripleBarrel([barrel("flop"),action({street:"turn",seat:1,type:"check"}),barrel("river")],1)).toBe(false);
+  });
+  it("modestly strengthens premium preflop combos while retaining bluffs",()=>{
+    const before=normalizedRange(opponentRange([],"BTN",["raise"]));
+    const after=normalizedRange(tripleBarrelRangeAdjustment(before));
+    const premium=(range:typeof before)=>range.filter(c=>comboQuality(c.cards)>=13).reduce((sum,c)=>sum+c.weight,0);
+    expect(premium(after)).toBeGreaterThan(premium(before));
+    expect(after.some(c=>comboQuality(c.cards)<10&&c.weight>0)).toBe(true);
   });
 });
