@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
+import { preflopActionsForSeat, flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
 import { comboQuality } from "@/lib/opponent-range";
 import { createHand, type GameState, type HandAction } from "@/lib/poker";
 
@@ -95,4 +95,31 @@ describe("flop equity from hand history",()=>{
     expect(result.win+result.tie+result.loss).toBeCloseTo(1,10);
     expect(result.combinations).toBe(1070190);
   },30000);
+});
+
+describe("table-wide preflop raise classification",()=>{
+  it("recognises an opponent's first raise as a three-bet after another seat opens",()=>{
+    const history=[
+      action({seat:0,type:"raise",amount:25,to:25}),
+      action({seat:1,type:"raise",amount:70,to:70}),
+    ];
+    expect(preflopActionsForSeat(history,1)).toEqual(["three-bet"]);
+    expect(preflopActionsForSeat(history,0)).toEqual(["raise"]);
+  });
+  it("recognises a four-bet even if it is the player's first raise",()=>{
+    const history=[
+      action({seat:0,type:"raise",amount:25,to:25}),
+      action({seat:2,type:"raise",amount:75,to:75}),
+      action({seat:1,type:"raise",amount:180,to:180}),
+    ];
+    expect(preflopActionsForSeat(history,1)).toEqual(["four-bet"]);
+  });
+  it("keeps calls and later raises in order",()=>{
+    const history=[
+      action({seat:1,type:"call"}),
+      action({seat:0,type:"raise",amount:30,to:30}),
+      action({seat:1,type:"raise",amount:90,to:90}),
+    ];
+    expect(preflopActionsForSeat(history,1)).toEqual(["call","three-bet"]);
+  });
 });
