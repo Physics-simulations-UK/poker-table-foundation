@@ -3,13 +3,18 @@ import { reweightRangeForPostflopAction, type BetSizeClass, type ObservedPostflo
 import { flopEquityAgainstRange, riverEquityAgainstRange, turnEquityAgainstRange, type EquityResult } from "@/lib/range-equity";
 import type { Card, GameState, HandAction, Street } from "@/lib/poker";
 
-function preflopActions(actions:HandAction[]):RangeAction[] {
-  const raises=actions.filter(a=>a.type==="raise");
-  if(raises.length===0) return actions.some(a=>a.type==="call")?["call"]:["unopened"];
+/** Classify raises against the entire table's ordered preflop action history. */
+export function preflopActionsForSeat(history:HandAction[],seat:number):RangeAction[] {
+  let raisesAtTable=0;
   const result:RangeAction[]=[];
-  for(let i=0;i<raises.length;i++) result.push(i===0?"raise":i===1?"three-bet":"four-bet");
-  if(actions.at(-1)?.type==="call") result.push("call");
-  return result;
+  for(const action of history){
+    if(action.street!=="preflop") continue;
+    if(action.type==="raise"){
+      raisesAtTable++;
+      if(action.seat===seat) result.push(raisesAtTable===1?"raise":raisesAtTable===2?"three-bet":"four-bet");
+    } else if(action.seat===seat&&action.type==="call") result.push("call");
+  }
+  return result.length?result:["unopened"];
 }
 
 function sizeClass(action:HandAction):BetSizeClass {
@@ -30,8 +35,7 @@ export function rangeFromActionHistory(game:GameState,opponentSeat:number,deadCa
   const opponent=game.players[opponentSeat];
   if(!opponent) throw new Error("Unknown opponent seat");
   const actions=game.actionHistory.filter(a=>a.seat===opponentSeat);
-  const pre=actions.filter(a=>a.street==="preflop");
-  let range=opponentRange(deadCards,opponent.position,preflopActions(pre));
+  let range=opponentRange(deadCards,opponent.position,preflopActionsForSeat(game.actionHistory,opponentSeat));
 
   for(const action of actions.filter(a=>a.street==="flop"||a.street==="turn"||a.street==="river")){
     const observed:ObservedPostflopAction=action.type==="raise"
