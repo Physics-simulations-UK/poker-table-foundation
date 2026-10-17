@@ -217,6 +217,12 @@ export function decideBotAction(game: GameState, strategyRoll?: number, sizingRo
           context.potOdds,
         );
       }
+      // Equity supports continuing with overcards, not automatically bluff-raising.
+      if (game.street === "flop" && hand.madeHand === "high-card") {
+        const fold = Math.min(strategy.fold ?? 0, baselineStrategy.fold ?? 0);
+        const raise = Math.min(strategy.raise ?? 0, baselineStrategy.raise ?? 0);
+        strategy = { fold, call: 1 - fold - raise, raise };
+      }
     }
 
     const intention = chooseMixedAction(strategy, strategyRoll).action;
