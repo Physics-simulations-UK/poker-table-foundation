@@ -80,19 +80,15 @@ function HeroControls({ game, onAction }: { game: GameState; onAction: (a: BetAc
 
 export function PokerTable({ initialGame }: { initialGame: GameState }) {
   const [game, setGame] = useState(initialGame);
-  const heroDecisions = useRef<HeroDecisionSnapshot[]>([]);
-  const completedHandDecisions = useRef<HeroDecisionSnapshot[]>([]);
+  const [heroDecisions, setHeroDecisions] = useState<HeroDecisionSnapshot[]>([]);
   const applyHeroAction = (action: BetAction) => {
-    setGame(current => {
-      const snapshot = captureHeroDecision(current, action);
-      const next = applyAction(current, action);
-      if (snapshot && next !== current) heroDecisions.current.push(snapshot);
-      return next;
-    });
+    const snapshot = captureHeroDecision(game, action);
+    if (!snapshot) return;
+    setHeroDecisions(previous => [...previous, snapshot]);
+    setGame(current => applyAction(current, action));
   };
   const startNextHand = () => {
-    completedHandDecisions.current = [...heroDecisions.current];
-    heroDecisions.current = [];
+    setHeroDecisions([]);
     setGame(current => nextHand(current));
   };
   const tableScroll = useRef<HTMLDivElement>(null);
@@ -154,12 +150,12 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
           <Button variant="table" onClick={startNextHand}><RotateCcw aria-hidden="true" /> NEW HAND</Button>
         </div>
       </div>
-      {game.street === "complete" && heroDecisions.current.length > 0 && (
+      {game.street === "complete" && heroDecisions.length > 0 && (
         <section aria-label="Hand review" style={{ margin: "16px auto", padding: "16px", maxWidth: 900, border: "1px solid #6b8a76", borderRadius: 12, color: "#e5eee8", background: "#14251d" }}>
           <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>HAND REVIEW · {game.handNumber}</h2>
           <p style={{ margin: "0 0 12px", opacity: 0.8 }}>Your decisions during this hand. Strategic coaching will be added next.</p>
           <div style={{ display: "grid", gap: 8 }}>
-            {heroDecisions.current.map((decision, index) => (
+            {heroDecisions.map((decision, index) => (
               <div key={index} style={{ padding: "10px 12px", border: "1px solid #3d5947", borderRadius: 8 }}>
                 <strong>{index + 1}. {decision.street.toUpperCase()} · {decision.position}</strong>
                 <div>Cards: {decision.holeCards.map(card => card.rank + suitGlyph[card.suit]).join(" ")}
