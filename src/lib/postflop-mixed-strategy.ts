@@ -162,3 +162,22 @@ export function riverHighCardDiscipline(
   const raise=Math.min(baseline.raise??0,context.activeOpponents>=2?0.005:0.025);
   return {fold:1-call-raise,call,raise};
 }
+
+/** Modest river caution for one pair when a third suited board card arrives
+ * and the bettor has led every postflop street. Pot odds still matter.
+ * This is a heuristic overlay, not an automatic fold. */
+export function riverFlushCompletionDiscipline(
+  baseline: StrategyDistribution<MixedPostflopAction>,
+  hand: PostflopAnalysis,
+  context: PostflopContext,
+  flushCompletedOnRiver: boolean,
+  opponentLedAllStreets: boolean,
+): StrategyDistribution<MixedPostflopAction> {
+  if(hand.madeHand!=="pair"||context.toCall<=0||!flushCompletedOnRiver||!opponentLedAllStreets) return baseline;
+  const pressure=context.potOdds>=0.24?0.55:context.potOdds>=0.14?0.75:0.90;
+  const oldCall=baseline.call??0;
+  const oldRaise=baseline.raise??0;
+  const call=oldCall*pressure;
+  const raise=oldRaise*0.50;
+  return {...baseline,call,raise,fold:(baseline.fold??0)+(oldCall-call)+(oldRaise-raise)};
+}
