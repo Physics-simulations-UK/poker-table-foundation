@@ -1,3 +1,4 @@
+import { fastSevenCardScore } from "@/lib/fast-seven-card";
 import { compareHandValues, evaluateHand } from "@/lib/hand-evaluator";
 import { fullDeck, type WeightedCombo } from "@/lib/opponent-range";
 import type { Card } from "@/lib/poker";
@@ -127,11 +128,11 @@ export function flopEquityAgainstRange(
       const turn=deck[i]!,river=deck[j]!;
       const turnKey=key(turn),riverKey=key(river);
       const finalBoard=[...board,turn,river];
-      const heroValue=evaluateHand([...hero,...finalBoard]);
+      const heroValue=fastSevenCardScore([...hero,...finalBoard]);
       for(const combo of validRange){
         if(combo.cards.some(c=>key(c)===turnKey||key(c)===riverKey)) continue;
-        const opponentValue=evaluateHand([...combo.cards,...finalBoard]);
-        const comparison=compareHandValues(heroValue,opponentValue);
+        const opponentValue=fastSevenCardScore([...combo.cards,...finalBoard]);
+        const comparison=heroValue-opponentValue;
         const weight=combo.weight/runoutsPerCombo;
         if(comparison>0) winWeight+=weight;
         else if(comparison<0) lossWeight+=weight;
