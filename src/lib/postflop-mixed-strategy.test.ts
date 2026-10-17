@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeStrategy } from "@/lib/mixed-strategy";
 import { analyzePostflop } from "@/lib/postflop-analysis";
-import { mixedPostflopStrategy, multiwayRiverAdjustment, riverHighCardDiscipline } from "@/lib/postflop-mixed-strategy";
+import { mixedPostflopStrategy, multiwayRiverAdjustment, riverHighCardDiscipline, riverFlushCompletionDiscipline } from "@/lib/postflop-mixed-strategy";
 import type { PostflopContext } from "@/lib/postflop-context";
 import type { Card, Rank, Suit } from "@/lib/poker";
 
@@ -147,5 +147,22 @@ describe("river high-card bluff-catching discipline",()=>{
     const hand=analyzePostflop(hole("Ks Qd"),cards("Kh 8c 3s 6d 2h"));
     const baseline={fold:0.1,call:0.8,raise:0.1};
     expect(riverHighCardDiscipline(baseline,hand,ctx({toCall:10,potOdds:0.09}))).toEqual(baseline);
+  });
+});
+
+describe("river flush completion bluff-catching",()=>{
+  const hand=analyzePostflop(hole("10s 10d"),cards("Kh 8h 3c 6d 2h"));
+  const baseline={fold:0.30,call:0.66,raise:0.04};
+  it("reduces one-pair calls facing a third suited river card and sustained betting",()=>{
+    const adjusted=riverFlushCompletionDiscipline(baseline,hand,ctx({toCall:40,potOdds:0.25}),true,true);
+    expect(adjusted.call).toBeLessThan(baseline.call);
+    expect(adjusted.fold).toBeGreaterThan(baseline.fold);
+    expect(adjusted.call).toBeGreaterThan(0);
+  });
+  it("does not overreact when the river did not complete the flush threat",()=>{
+    expect(riverFlushCompletionDiscipline(baseline,hand,ctx({toCall:40,potOdds:0.25}),false,true)).toEqual(baseline);
+  });
+  it("preserves calls without a three-street betting line",()=>{
+    expect(riverFlushCompletionDiscipline(baseline,hand,ctx({toCall:40,potOdds:0.25}),true,false)).toEqual(baseline);
   });
 });
