@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
+import { flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
 import { comboQuality } from "@/lib/opponent-range";
 import { createHand, type GameState, type HandAction } from "@/lib/poker";
 
@@ -80,4 +80,19 @@ describe("turn equity from hand history",()=>{
     expect(turnEquityFromHistory(passive,0,1).equity)
       .not.toBeCloseTo(turnEquityFromHistory(aggressive,0,1).equity,6);
   });
+});
+
+describe("flop equity from hand history",()=>{
+  it("reconstructs a weighted range from preflop and flop actions",()=>{
+    const game=createHand(0,1);
+    const flop:GameState={...game,revealedCount:3,street:"flop",actionHistory:[
+      action({type:"raise",amount:25,to:25}),
+      action({street:"flop",type:"call",amount:30,to:30,potBefore:70}),
+    ]};
+    const result=flopEquityFromHistory(flop,0,1);
+    expect(result.equity).toBeGreaterThanOrEqual(0);
+    expect(result.equity).toBeLessThanOrEqual(1);
+    expect(result.win+result.tie+result.loss).toBeCloseTo(1,10);
+    expect(result.combinations).toBe(1070190);
+  },30000);
 });
