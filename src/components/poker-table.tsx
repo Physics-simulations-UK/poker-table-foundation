@@ -5,6 +5,7 @@ import { nextHand, type Card, type GameState, type Player } from "@/lib/poker";
 import { applyAction, CHIPS_PER_BB, formatBB, getLegalActions, potTotal, toBB, type BetAction } from "@/lib/betting";
 import { decideBotAction } from "@/lib/bot";
 import { captureHeroDecision, type HeroDecisionSnapshot } from "@/lib/hero-decision";
+import { explainFlopDecision } from "@/lib/flop-coaching";
 
 const suitGlyph: Record<Card["suit"], string> = {
   spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣",
@@ -163,6 +164,16 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
                 </div>
                 <div>Pot before action: {toBB(decision.potBefore)} BB · To call: {toBB(decision.toCall)} BB</div>
                 <div>Your action: <strong>{decision.action.type.toUpperCase()}{decision.action.type === "raise" ? " TO " + toBB(decision.action.to) + " BB" : ""}</strong></div>
+                {decision.street === "flop" && (() => {
+                  const explanation = explainFlopDecision(decision);
+                  if (!explanation) return null;
+                  return <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #3d5947" }}>
+                    <div><strong>Flop analysis:</strong> {explanation.handStrength}</div>
+                    <div>Board: {explanation.boardTexture}</div>
+                    <div>{explanation.potOddsPercent === null ? "No call required" : "Equity needed to call: " + explanation.potOddsPercent + "%"}</div>
+                    <div style={{ opacity: 0.75, fontSize: 12 }}>{explanation.note}</div>
+                  </div>;
+                })()}
               </div>
             ))}
           </div>
