@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { nextHand, type Card, type GameState, type Player } from "@/lib/poker";
 import { applyAction, CHIPS_PER_BB, formatBB, getLegalActions, potTotal, toBB, type BetAction } from "@/lib/betting";
 import { decideBotAction } from "@/lib/bot";
+import { captureHeroDecision, type HeroDecisionSnapshot } from "@/lib/hero-decision";
 
 const suitGlyph: Record<Card["suit"], string> = {
   spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣",
@@ -79,6 +80,21 @@ function HeroControls({ game, onAction }: { game: GameState; onAction: (a: BetAc
 
 export function PokerTable({ initialGame }: { initialGame: GameState }) {
   const [game, setGame] = useState(initialGame);
+  const heroDecisions = useRef<HeroDecisionSnapshot[]>([]);
+  const completedHandDecisions = useRef<HeroDecisionSnapshot[]>([]);
+  const applyHeroAction = (action: BetAction) => {
+    setGame(current => {
+      const snapshot = captureHeroDecision(current, action);
+      const next = applyAction(current, action);
+      if (snapshot && next !== current) heroDecisions.current.push(snapshot);
+      return next;
+    });
+  };
+  const startNextHand = () => {
+    completedHandDecisions.current = [...heroDecisions.current];
+    heroDecisions.current = [];
+    setGame(current => nextHand(current));
+  };
   const tableScroll = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = tableScroll.current;
@@ -130,12 +146,12 @@ export function PokerTable({ initialGame }: { initialGame: GameState }) {
             {heroTurn ? "Your turn to act" : actor ? `${actor.name} is thinking…` : game.message ?? "Hand complete"}
           </span>
         </div>
-        {heroTurn && <HeroControls game={game} onAction={(a) => setGame((g) => applyAction(g, a))} />}
+        {heroTurn && <HeroControls game={game} onAction={applyHeroAction} />}
         <div className="control-actions">
           <Button variant="tableOutline" disabled>SHOW TURN</Button>
           <Button variant="tableOutline" disabled>SHOW RIVER</Button>
           <span className="control-divider" />
-          <Button variant="table" onClick={() => setGame((g) => nextHand(g))}><RotateCcw aria-hidden="true" /> NEW HAND</Button>
+          <Button variant="table" onClick={startNextHand}><RotateCcw aria-hidden="true" /> NEW HAND</Button>
         </div>
       </div>
       <footer className="app-footer"><span>POKER COACH <span className="footer-separator">/</span> TABLE VIEW</span><span>6 PLAYERS <span className="footer-separator">·</span> 100 BB STARTING STACKS</span></footer>
