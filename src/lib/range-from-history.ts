@@ -17,9 +17,25 @@ export function preflopActionsForSeat(history:HandAction[],seat:number):RangeAct
   return result.length?result:["unopened"];
 }
 
-function sizeClass(action:HandAction):BetSizeClass {
-  if(action.type==="check") return "medium";
-  const fraction=action.potBefore>0?action.amount/action.potBefore:0;
+/** Pot-relative size of the incremental wager, accounting for an existing bet.
+ * For a raise, compare the additional amount beyond calling with the pot
+ * the raiser could win after making the call.
+ */
+export function postflopActionSizeClass(history:HandAction[],index:number):BetSizeClass {
+  const action=history[index];
+  if(!action) throw new Error("Unknown action index");
+  if(action.type==="check"||action.type==="fold") return "medium";
+  let previousTo=0;
+  for(let i=index-1;i>=0;i--){
+    const prior=history[i]!;
+    if(prior.street!==action.street) continue;
+    if(prior.seat!==action.seat) previousTo=Math.max(previousTo,prior.to);
+  }
+  const priorCommitment=action.to-action.amount;
+  const toCall=Math.max(0,previousTo-priorCommitment);
+  const wager=action.type==="raise"?Math.max(0,action.amount-toCall):action.amount;
+  const denominator=action.potBefore+(action.type==="raise"?toCall:0);
+  const fraction=denominator>0?wager/denominator:0;
   if(fraction<=0.45) return "small";
   if(fraction<=0.8) return "medium";
   return "large";
@@ -37,14 +53,15 @@ export function rangeFromActionHistory(game:GameState,opponentSeat:number,deadCa
   const actions=game.actionHistory.filter(a=>a.seat===opponentSeat);
   let range=opponentRange(deadCards,opponent.position,preflopActionsForSeat(game.actionHistory,opponentSeat));
 
-  for(const action of actions.filter(a=>a.street==="flop"||a.street==="turn"||a.street==="river")){
+  for(const [index,action] of game.actionHistory.entries()){
+    if(action.seat!==opponentSeat || (action.street!=="flop"&&action.street!=="turn"&&action.street!=="river")) continue;
     const observed:ObservedPostflopAction=action.type==="raise"
       ? (action.to>action.amount?"raise":"bet")
       : action.type==="call"?"call"
       : action.type==="check"?"check"
       : "check";
     if(action.type==="fold") continue;
-    range=reweightRangeForPostflopAction(range,visibleBoard(game,action.street),observed,sizeClass(action));
+    range=reweightRangeForPostflopAction(range,visibleBoard(game,action.street),observed,postflopActionSizeClass(game.actionHistory,index));
   }
   return normalizedRange(range);
 }
