@@ -148,3 +148,17 @@ export function multiwayRiverAdjustment(
   else adjusted.check=(baseline.check??0)+removed;
   return adjusted;
 }
+
+/** River high-card bluff catchers should not continue simply because the
+ * wager is cheap. Preserve a small bluff-catching frequency heads-up. */
+export function riverHighCardDiscipline(
+  baseline: StrategyDistribution<MixedPostflopAction>,
+  hand: PostflopAnalysis,
+  context: PostflopContext,
+): StrategyDistribution<MixedPostflopAction> {
+  if(hand.madeHand!=="high-card" || context.toCall<=0) return baseline;
+  const callCap=context.activeOpponents>=2?0.05:context.potOdds<=0.12?0.18:0.10;
+  const call=Math.min(baseline.call??0,callCap);
+  const raise=Math.min(baseline.raise??0,context.activeOpponents>=2?0.005:0.025);
+  return {fold:1-call-raise,call,raise};
+}
