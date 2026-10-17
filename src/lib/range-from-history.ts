@@ -1,4 +1,4 @@
-import { normalizedRange, opponentRange, type RangeAction, type WeightedCombo } from "@/lib/opponent-range";
+import { comboQuality, normalizedRange, opponentRange, type RangeAction, type WeightedCombo } from "@/lib/opponent-range";
 import { reweightRangeForPostflopAction, type BetSizeClass, type ObservedPostflopAction } from "@/lib/postflop-range";
 import { flopEquityAgainstRange, riverEquityAgainstRange, turnEquityAgainstRange, type EquityResult } from "@/lib/range-equity";
 import type { Card, GameState, HandAction, Street } from "@/lib/poker";
@@ -59,6 +59,24 @@ export function postflopObservedAction(history:HandAction[],index:number):Observ
   return highestOther>ownBefore?"raise":"bet";
 }
 
+/** Identify sustained aggression on all three postflop streets. */
+export function hasTripleBarrel(history:HandAction[],seat:number):boolean {
+  return (["flop","turn","river"] as const).every(street=>
+    history.some((action,index)=>action.seat===seat&&action.street===street&&action.type==="raise"
+      &&(postflopObservedAction(history,index)==="bet"||postflopObservedAction(history,index)==="raise"))
+  );
+}
+
+/** Small extra weight for value hands after sustained aggression.
+ * Never eliminates bluffs, and only applies once all three streets are seen.
+ */
+export function tripleBarrelRangeAdjustment(range:WeightedCombo[]):WeightedCombo[] {
+  return range.map(combo=>({
+    ...combo,
+    weight:combo.weight*(comboQuality(combo.cards)>=13?1.18:0.96),
+  }));
+}
+
 function visibleBoard(game:GameState,street:Street):Card[] {
   const n=street==="flop"?3:street==="turn"?4:street==="river"||street==="complete"?5:0;
   return game.communityCards.slice(0,n);
@@ -77,6 +95,7 @@ export function rangeFromActionHistory(game:GameState,opponentSeat:number,deadCa
     if(action.type==="fold") continue;
     range=reweightRangeForPostflopAction(range,visibleBoard(game,action.street),observed,postflopActionSizeClass(game.actionHistory,index));
   }
+  if(hasTripleBarrel(game.actionHistory,opponentSeat)) range=tripleBarrelRangeAdjustment(range);
   return normalizedRange(range);
 }
 
