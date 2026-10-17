@@ -9,6 +9,8 @@ export interface FlopDecisionExplanation {
   note: string;
   handExplanation: string;
   boardExplanation: string;
+  recommendedAction: "call" | "check" | "fold" | "bet" | "uncertain";
+  recommendationReason: string;
 }
 
 /** Descriptive flop coaching only; does not claim a play is GTO-correct. */
@@ -43,5 +45,29 @@ export function explainFlopDecision(decision: HeroDecisionSnapshot): FlopDecisio
     : board.suitTexture === "monotone"
     ? "All three flop cards share a suit. Flushes and flush draws are important threats."
     : "All three flop cards have different suits, so no immediate flush draw is possible.";
-  return { handStrength, boardTexture, potOddsPercent, note, handExplanation: handExplanation + drawExplanation, boardExplanation };
+  const strongMadeHand = !["high-card", "pair"].includes(hand.madeHand);
+  const strongPair = hand.madeHand === "pair" && ["top-pair", "overpair"].includes(hand.pairClass ?? "");
+  const realDraw = (hand.flushDraw && hand.holeCardFlushDraw) ||
+    (hand.straightDraw !== null && hand.holeCardStraightDraw);
+  let recommendedAction: FlopDecisionExplanation["recommendedAction"] = "uncertain";
+  let recommendationReason = "The best action depends on your opponent's range, their bet size and the betting history. Hand strength alone is not enough to give reliable advice.";
+  if (decision.toCall > 0) {
+    if (strongMadeHand || strongPair) {
+      recommendedAction = "call";
+      recommendationReason = "You have a reasonably strong made hand. Calling is a sensible starting point, keeping weaker hands in the pot. Raising may also be appropriate against some opponents.";
+    } else if (hand.madeHand === "high-card" && !realDraw && potOddsPercent !== null && potOddsPercent >= 30) {
+      recommendedAction = "fold";
+      recommendationReason = "You have no pair or strong immediate draw, and this call needs substantial equity. Folding is usually the safer default.";
+    } else if (realDraw && potOddsPercent !== null && potOddsPercent <= 20) {
+      recommendedAction = "call";
+      recommendationReason = "You have a meaningful draw and the call is relatively inexpensive. Calling is a reasonable starting point, although your actual equity is not yet calculated.";
+    }
+  } else if (strongMadeHand || strongPair) {
+    recommendedAction = "bet";
+    recommendationReason = "You have a strong made hand, so betting for value is often reasonable. Checking can still be correct depending on position and earlier actions.";
+  } else {
+    recommendedAction = "check";
+    recommendationReason = "Checking avoids committing chips with a hand that may not be strong enough to value bet. Bluffing can still be correct in some situations.";
+  }
+  return { handStrength, boardTexture, potOddsPercent, note, handExplanation: handExplanation + drawExplanation, boardExplanation, recommendedAction, recommendationReason };
 }
