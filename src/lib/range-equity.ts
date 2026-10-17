@@ -114,23 +114,25 @@ export function flopEquityAgainstRange(
   if(board.length!==3) throw new Error("Flop equity requires exactly three board cards");
 
   const known=new Set([...hero,...board].map(key));
+  const deck=fullDeck().filter(c=>!known.has(key(c)));
+  const validRange=range.filter(combo=>combo.weight>0&&!combo.cards.some(c=>known.has(key(c))));
   let winWeight=0,tieWeight=0,lossWeight=0,combinations=0;
 
-  for(const combo of range){
-    if(combo.weight<=0) continue;
-    if(combo.cards.some(c=>known.has(key(c)))) continue;
-
-    const comboDead=new Set([...known,...combo.cards.map(key)]);
-    const runoutDeck=fullDeck().filter(c=>!comboDead.has(key(c)));
-    const runoutCount=runoutDeck.length*(runoutDeck.length-1)/2;
-
-    for(let i=0;i<runoutDeck.length;i++){
-      for(let j=i+1;j<runoutDeck.length;j++){
-        const finalBoard=[...board,runoutDeck[i]!,runoutDeck[j]!];
-        const heroValue=evaluateHand([...hero,...finalBoard]);
+  // Runout-first ordering: evaluate Hero once per turn/river combination,
+  // then compare against only opponent combos not containing either runout card.
+  // Each legal opponent combo still receives exactly C(45,2) runouts.
+  const runoutsPerCombo=(deck.length-2)*(deck.length-3)/2;
+  for(let i=0;i<deck.length;i++){
+    for(let j=i+1;j<deck.length;j++){
+      const turn=deck[i]!,river=deck[j]!;
+      const turnKey=key(turn),riverKey=key(river);
+      const finalBoard=[...board,turn,river];
+      const heroValue=evaluateHand([...hero,...finalBoard]);
+      for(const combo of validRange){
+        if(combo.cards.some(c=>key(c)===turnKey||key(c)===riverKey)) continue;
         const opponentValue=evaluateHand([...combo.cards,...finalBoard]);
         const comparison=compareHandValues(heroValue,opponentValue);
-        const weight=combo.weight/runoutCount;
+        const weight=combo.weight/runoutsPerCombo;
         if(comparison>0) winWeight+=weight;
         else if(comparison<0) lossWeight+=weight;
         else tieWeight+=weight;
