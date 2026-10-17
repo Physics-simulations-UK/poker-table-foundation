@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { postflopActionSizeClass, preflopActionsForSeat, flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
+import { postflopObservedAction, postflopActionSizeClass, preflopActionsForSeat, flopEquityFromHistory, rangeFromActionHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
 import { comboQuality } from "@/lib/opponent-range";
 import { createHand, type GameState, type HandAction } from "@/lib/poker";
 
@@ -147,5 +147,31 @@ describe("pot-relative postflop sizing",()=>{
     ];
     // 60 to call; 50 additional, relative to 280 after calling.
     expect(postflopActionSizeClass(history,2)).toBe("small");
+  });
+});
+
+describe("postflop action history interpretation",()=>{
+  it("recognises an opening bet even after a previous-street raise",()=>{
+    const history=[
+      action({street:"preflop",seat:0,type:"raise",amount:30,to:30}),
+      action({street:"flop",seat:1,type:"raise",amount:40,to:40,potBefore:70}),
+    ];
+    expect(postflopObservedAction(history,1)).toBe("bet");
+  });
+  it("recognises a genuine raise over another player's flop bet",()=>{
+    const history=[
+      action({street:"flop",seat:0,type:"raise",amount:30,to:30,potBefore:100}),
+      action({street:"flop",seat:1,type:"raise",amount:90,to:90,potBefore:130}),
+    ];
+    expect(postflopObservedAction(history,0)).toBe("bet");
+    expect(postflopObservedAction(history,1)).toBe("raise");
+  });
+  it("recognises a re-raise after an earlier contribution",()=>{
+    const history=[
+      action({street:"river",seat:1,type:"raise",amount:30,to:30,potBefore:100}),
+      action({street:"river",seat:0,type:"raise",amount:90,to:90,potBefore:130}),
+      action({street:"river",seat:1,type:"raise",amount:120,to:150,potBefore:220}),
+    ];
+    expect(postflopObservedAction(history,2)).toBe("raise");
   });
 });
