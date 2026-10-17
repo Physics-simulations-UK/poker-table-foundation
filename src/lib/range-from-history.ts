@@ -41,6 +41,24 @@ export function postflopActionSizeClass(history:HandAction[],index:number):BetSi
   return "large";
 }
 
+/** A recorded raise action is an opening bet unless another player had
+ * already wagered more than this player's own commitment on that street. */
+export function postflopObservedAction(history:HandAction[],index:number):ObservedPostflopAction {
+  const action=history[index];
+  if(!action) throw new Error("Unknown action index");
+  if(action.type==="call"||action.type==="check") return action.type;
+  if(action.type==="fold") return "check";
+  const ownBefore=action.to-action.amount;
+  let highestOther=0;
+  for(let i=0;i<index;i++){
+    const earlier=history[i]!;
+    if(earlier.street===action.street&&earlier.seat!==action.seat&&earlier.type==="raise"){
+      highestOther=Math.max(highestOther,earlier.to);
+    }
+  }
+  return highestOther>ownBefore?"raise":"bet";
+}
+
 function visibleBoard(game:GameState,street:Street):Card[] {
   const n=street==="flop"?3:street==="turn"?4:street==="river"||street==="complete"?5:0;
   return game.communityCards.slice(0,n);
@@ -55,11 +73,7 @@ export function rangeFromActionHistory(game:GameState,opponentSeat:number,deadCa
 
   for(const [index,action] of game.actionHistory.entries()){
     if(action.seat!==opponentSeat || (action.street!=="flop"&&action.street!=="turn"&&action.street!=="river")) continue;
-    const observed:ObservedPostflopAction=action.type==="raise"
-      ? (action.to>action.amount?"raise":"bet")
-      : action.type==="call"?"call"
-      : action.type==="check"?"check"
-      : "check";
+    const observed=postflopObservedAction(game.actionHistory,index);
     if(action.type==="fold") continue;
     range=reweightRangeForPostflopAction(range,visibleBoard(game,action.street),observed,postflopActionSizeClass(game.actionHistory,index));
   }
