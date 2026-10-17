@@ -5,7 +5,7 @@ import { mixedFirstInStrategy, mixedVersusOpenAndCallersStrategy, mixedVersusOpe
 import { chooseMixedAction } from "@/lib/mixed-strategy";
 import { analyzePostflop } from "@/lib/postflop-analysis";
 import { analyzePostflopContext } from "@/lib/postflop-context";
-import { mixedPostflopStrategy, multiwayRiverAdjustment } from "@/lib/postflop-mixed-strategy";
+import { mixedPostflopStrategy, multiwayRiverAdjustment, riverHighCardDiscipline } from "@/lib/postflop-mixed-strategy";
 import { postflopBetSizeStrategy, potFractionForSize } from "@/lib/postflop-bet-sizing";
 import { flopEquityFromHistory, riverEquityFromHistory, turnEquityFromHistory } from "@/lib/range-from-history";
 import { equityAdjustedRiverStrategy } from "@/lib/river-equity-strategy";
@@ -160,7 +160,10 @@ export function decideBotAction(game: GameState, strategyRoll?: number, sizingRo
       const strategy = callersAtPrice.length > 0
         ? mixedVersusOpenAndCallersStrategy(player.cards, player.position, opener.position, openSizeBB)
         : mixedVersusOpenStrategy(player.cards, player.position, opener.position, openSizeBB);
-      const intention = chooseMixedAction(strategy, strategyRoll).action;
+      if(game.street==="river" && context.toCall>0 && hand.madeHand==="high-card"){
+      strategy=riverHighCardDiscipline(strategy,hand,context);
+    }
+    const intention = chooseMixedAction(strategy, strategyRoll).action;
       if (intention === "raise") return raiseTo(game.currentBet * 3);
       if (intention === "call") return call;
       return passive;
